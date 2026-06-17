@@ -106,7 +106,7 @@ gcloud auth application-default login
 ### 2. Configure project env
 Open [.env](file:///h:/Programming/dev/gdg-multi-agent-ai/.env) and update it with your GCP Project ID:
 ```env
-GCP_PROJECT_ID=your-actual-gcp-project-id
+GCP_PROJECT_ID=gdg-agent-sayen-2026
 GCP_LOCATION=us-central1
 ```
 
