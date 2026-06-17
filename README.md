@@ -1,11 +1,12 @@
 # GDG Yerevan AI Multi-Agent Workshop (June 20, 2026)
-## Pre-Workshop Preparation & Roadmap (Python Edition)
+## Pre-Workshop Preparation & Readiness Hub (Python Edition)
 
 Welcome to the preparation hub for the **GDG Yerevan AI Multi-Agent Workshop** at Yandex Hall Yerevan!
 
-This guide is optimized for developers with strong **Web Backend Engineering** backgrounds who are looking to build multi-agent orchestration systems on **Google Cloud & Vertex AI** using **Python**. 
-
-Rather than walking through basic Python syntax, this guide focuses on setting up cloud credentials, orchestrating agent tool loops using the Vertex AI SDK, managing lightweight state, and preparing for deployment.
+This project is configured as a fully functional **Multi-Agent & Session Memory Playground** with a premium web dashboard. It is designed to get you up to speed on the core concepts of the workshop:
+1. **Cloud & Infrastructure (Rohan Singh)** — Cloud Run deployments and Vertex AI integration.
+2. **Agentic Layer & Orchestration (Armen Vardanyan)** — Tool calling, function declarations, and collaborative agent chains.
+3. **Agent Memory & Context Engineering (Vadim Patsev)** — SQLite session variables and context-injected session memories.
 
 ---
 
@@ -13,306 +14,128 @@ Rather than walking through basic Python syntax, this guide focuses on setting u
 * **Date & Time:** June 20, 2026 | 10:30 AM - 05:30 PM
 * **Location:** Yandex Hall (Moskovyan 35, Yerevan)
 * **Registration:** [Forms Link](https://forms.gle/owUAq9eEU48LASmk6)
-* **Goal:** Build, configure, and deploy a multi-agent system on Google Cloud, and extend it with custom agent roles.
-
-### 👥 Speakers & Mentors
-* **Armen Vardanyan** (GDE Angular) — *Agentic Architectures & Orchestration*
-* **Vadim Patsev** (Yandex Armenia) — *Agent Memory & Context Engineering*
-* **Rohan Singh** (GDE Cloud) — *Cloud & Infrastructure for AI Systems*
+* **Goal:** Learn, run, and deploy a multi-agent system on Google Cloud, and extend it with custom agent roles.
 
 ---
 
-## ⏰ Agenda
+## 🛠️ Step 1: Align Your Python Interpreter (VS Code)
 
-| Time | Session | Description |
-| :--- | :--- | :--- |
-| **10:30 - 11:00** | 📝 Registration & Coffee | Check-in & networking |
-| **11:00 - 11:10** | 👋 Opening | Intro to the workshop, project goals, architecture overview |
-| **11:10 - 11:50** | ☁️ Cloud & Infrastructure (Rohan) | Google Cloud for agents, Cloud Run, Cloud Functions, and Vertex AI basics |
-| **11:50 - 12:30** | 🤖 Building the Agentic Layer (Armen) | Agent design patterns, tool calling, multi-agent communication loops |
-| **12:30 - 13:00** | 🧠 Memory & Context (Vadim) | Memory trade-offs, RAG vs. lightweight storage (SQLite, Redis) |
-| **13:00 - 13:20** | 🛠 Hands-on Kickoff | Starter repo walkthrough, team formation, cloud setup |
-| **13:20 - 16:30** | 💻 Hands-on Coding Session | Build, configure, and deploy a multi-agent system |
-| **16:30 - 17:30** | 🚀 Wrap-up & Demos | Participant presentations, Q&A, and closing remarks |
+To ensure VS Code correctly recognizes the libraries installed during setup (preventing import errors or yellow underlines):
 
-*Note: Pizza and coffee will be available continuously during the coding session.*
+1. **Verify Python Installation:** Python 3.13 (or 3.11) is already installed.
+2. **Select VS Code Interpreter:**
+   - In VS Code, open the **Command Palette** by pressing `Ctrl + Shift + P` (or `Cmd + Shift + P` on macOS).
+   - Type **`Python: Select Interpreter`** and select it.
+   - Choose the path pointing to **`C:\Users\Sayen\AppData\Local\Microsoft\WindowsApps\python.exe`** (or enter the exact path where you execute python).
+3. We have updated your workspace [.vscode/settings.json](file:///h:/Programming/dev/gdg-multi-agent-ai/.vscode/settings.json) to target this python path by default.
 
 ---
 
-## 🚀 Step 1: GCP & Vertex AI SDK Setup (15 Minutes)
+## 💻 Step 2: Playground Directory Structure
 
-To save time during the workshop, verify your local GCP configuration beforehand:
-
-1. **Install the Google Cloud CLI (gcloud):** Verify it is in your system PATH.
-2. **Authenticate Local SDK:**
-   ```powershell
-   gcloud auth login
-   gcloud auth application-default login
-   ```
-3. **Configure Project & Services:**
-   Create a Google Cloud Project or select a sandbox project, then enable Vertex AI and Cloud Run services:
-   ```powershell
-   gcloud config set project YOUR_PROJECT_ID
-   gcloud services enable aiplatform.googleapis.com run.googleapis.com
-   ```
-
----
-
-## 💻 Step 2: "The Legal Analyst" Python Micro-Agent Project
-
-We've initialized a structured Python project at the root. It demonstrates how to build a **Legal Analyst Agent** that queries a local SQLite database of corporations regulations via **Vertex AI Tool Calling**.
-
-### Project Structure
+The project has been expanded into a complete web app with a visual, responsive dashboard:
 ```text
 gdg-multi-agent-ai/
-├── README.md               # This unified guide
-├── requirements.txt        # Package dependencies
-├── .env.example            # Environment template
-├── Dockerfile              # Docker configuration for Cloud Run
+├── README.md               # This unified learning guide
+├── requirements.txt        # Package dependencies (Vertex AI, Flask, Gunicorn)
+├── .env.example            # Environment variables template
+├── .env                    # Local environment config (GCP credentials)
+├── Dockerfile              # Container configuration for Cloud Run
+├── walkthrough.md          # Step-by-step code architecture walkthrough
 └── src/
     ├── __init__.py
-    ├── database.py         # SQLite memory database initialization & data seeding
-    ├── agent.py            # LegalAgent core class using Vertex AI & Tool definitions
-    ├── main.py             # CLI application entrypoint for local execution
-    └── app.py              # Lightweight Flask wrapper for API deployment
-```
-
-### 1. Project Dependencies (`requirements.txt`)
-We use the official Google Cloud Vertex AI Python SDK, `python-dotenv` for config, and `Flask` with `gunicorn` for deployment:
-```text
-google-cloud-aiplatform
-python-dotenv
-flask
-gunicorn
-```
-
-### 2. Local Database Simulation (`src/database.py`)
-Simulates looking up statutory definitions (specifically, the Australian Corporations Act Sections 181 & 182) from a relational DB.
-```python
-import sqlite3
-
-def setup_database():
-    """Initializes an in-memory SQLite database and seeds it with statutes."""
-    # We use in-memory database for local test runs
-    conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS statutes (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            clause TEXT
-        )
-    ''')
-    
-    # Seeding
-    statutes_data = [
-        (
-            'corp-181',
-            'Corporations Act Section 181',
-            'Good faith: A director or other officer of a corporation must exercise their powers and discharge their duties in good faith in the best interests of the corporation and for a proper purpose.'
-        ),
-        (
-            'corp-182',
-            'Corporations Act Section 182',
-            'Use of position: A director, secretary, other officer or employee of a corporation must not improperly use their position to gain an advantage for themselves or someone else or cause detriment to the corporation.'
-        )
-    ]
-    
-    cursor.executemany(
-        'INSERT OR REPLACE INTO statutes (id, title, clause) VALUES (?, ?, ?)',
-        statutes_data
-    )
-    conn.commit()
-    return conn
-```
-
-### 3. Agent & Tool Calling (`src/agent.py`)
-This module initializes the Vertex AI client and registers the SQLite lookup function as a Tool that Gemini can call.
-```python
-import os
-import vertexai
-from vertexai.generative_models import GenerativeModel, Tool, FunctionDeclaration, Part
-
-class LegalAgent:
-    def __init__(self, db_conn):
-        self.db = db_conn
-        
-        # Initialize Vertex AI
-        project = os.getenv("GCP_PROJECT_ID", "your-gcp-project-id")
-        location = os.getenv("GCP_LOCATION", "us-central1")
-        vertexai.init(project=project, location=location)
-
-        # 1. Define the Function Tool declaration
-        self.get_statute_declaration = FunctionDeclaration(
-            name="get_statute_definition",
-            description="Retrieves the official text/clause of a specific Corporations Act section using its statute ID.",
-            parameters={
-                "type": "OBJECT",
-                "properties": {
-                    "statute_id": {
-                        "type": "STRING",
-                        "description": 'The unique ID of the statute, e.g., "corp-181" or "corp-182".',
-                    }
-                },
-                "required": ["statute_id"],
-            }
-        )
-
-        # 2. Package it into a Tool configuration
-        self.db_tool = Tool(function_declarations=[self.get_statute_declaration])
-
-        # 3. Create GenerativeModel instance with tools registered
-        self.model = GenerativeModel(
-            model_name="gemini-1.5-flash",
-            tools=[self.db_tool]
-        )
-
-    def _execute_db_query(self, statute_id: str) -> str:
-        """Executes a local SQL search based on tool parameters requested by Gemini."""
-        cursor = self.db.cursor()
-        cursor.execute("SELECT clause FROM statutes WHERE id = ?", (statute_id,))
-        result = cursor.fetchone()
-        if result:
-            return result[0]
-        return "Statute not found in database."
-
-    def run(self, user_input: str) -> str:
-        print(f"\n[User Query]: {user_input}")
-        
-        # Use stateful chat interface to manage messaging flows seamlessly
-        chat = self.model.start_chat()
-        response = chat.send_message(user_input)
-        
-        # Inspect if the model decided to request tool usage
-        if response.candidates[0].function_calls:
-            function_call = response.candidates[0].function_calls[0]
-            print(f"🤖 Agent Decided to Call Tool: {function_call.name}")
-            
-            # Extract arguments and invoke local function
-            statute_id = function_call.args.get("statute_id")
-            tool_output = self._execute_db_query(statute_id)
-            print(f"🔧 Tool Executed Locally, Output: \"{tool_output}\"")
-            
-            # Send the tool execution result back to the model
-            follow_up = chat.send_message(
-                Part.from_function_response(
-                    name=function_call.name,
-                    response={"result": tool_output}
-                )
-            )
-            final_text = follow_up.text
-            print(f"🤖 Agent Final Answer:\n{final_text}")
-            return final_text
-        else:
-            final_text = response.text
-            print(f"🤖 Agent Final Answer:\n{final_text}")
-            return final_text
-```
-
-### 4. CLI Execution (`src/main.py`)
-Run queries directly from the command line:
-```python
-import os
-from dotenv import load_dotenv
-from database import setup_database
-from agent import LegalAgent
-
-load_dotenv()
-
-def main():
-    print("Setting up local SQLite database...")
-    db_conn = setup_database()
-    
-    print("Initializing Legal Agent (Vertex AI)...")
-    agent = LegalAgent(db_conn)
-    
-    # 1. Run a query that triggers the database tool
-    agent.run("What does Corporations Act Section 181 state about good faith?")
-    
-    # 2. Run a query that requires general model knowledge
-    agent.run("Explain briefly what a conflict of interest is in general terms.")
-
-if __name__ == "__main__":
-    main()
-```
-
-### 5. Flask Web Server Wrapper (`src/app.py`)
-To deploy to Google Cloud Run, expose a lightweight POST API.
-```python
-import os
-from flask import Flask, request, jsonify
-from dotenv import load_dotenv
-from database import setup_database
-from agent import LegalAgent
-
-load_dotenv()
-
-app = Flask(__name__)
-
-# Initialize database and agent at start
-db_conn = setup_database()
-agent = LegalAgent(db_conn)
-
-@app.route("/query", methods=["POST"])
-def handle_query():
-    data = request.get_json() or {}
-    user_input = data.get("query")
-    if not user_input:
-        return jsonify({"error": "Missing 'query' parameter"}), 400
-    
-    try:
-        response_text = agent.run(user_input)
-        return jsonify({"response": response_text})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    # Cloud Run expects the application to listen on PORT environment variable
-    port = int(os.getenv("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    ├── database.py         # SQLite setup: Statutes + Persistent Session Memory
+    ├── agent.py            # Multi-agent system (LegalAnalyst, ComplianceAuditor, Orchestrator)
+    ├── main.py             # CLI runner script verifying traces and SQLite storage
+    ├── app.py              # Flask server hosting REST APIs and serving UI
+    └── static/
+        ├── index.html      # Premium Developer Dashboard UI HTML
+        ├── style.css       # Sleek dark-mode glassmorphic styling
+        └── app.js          # JavaScript controller for API fetches and trace rendering
 ```
 
 ---
 
-## ☁️ Step 3: Containerization & Cloud Run Deployment
+## 🤖 Step 3: Understanding the Basics (Pre-Workshop Study)
 
-Cloud Run relies on Docker to build and scale your container.
+Before you attend the event, read through these three components in the code to understand the concepts:
 
-### 1. Dockerfile
-```dockerfile
-FROM python:3.11-slim
+### A. Agentic Layer & Orchestration (Armen's Session)
+Look at [src/agent.py](file:///h:/Programming/dev/gdg-multi-agent-ai/src/agent.py):
+- **Function Declarations:** We define the schema of what tools are available (e.g. `get_statute_definition`, `query_legal_analyst`, `store_fact`, `recall_fact`) using `FunctionDeclaration`.
+- **Tool Packaging:** We bind these declarations into `Tool` objects and pass them to the `GenerativeModel`.
+- **Multi-Agent Collaboration:** We showcase a **Tool-as-an-Agent** pattern. The `ComplianceAuditorAgent` is responsible for transaction audits. It does *not* have direct database access. Instead, it has a tool called `query_legal_analyst` which delegates legal searches by calling the `LegalAnalystAgent.run()` method.
+- **Routing:** The `LegalAgent` class acts as the main gateway (Orchestrator). It inspects the input query: if it's a direct law lookup, it routes to the `LegalAnalystAgent`; if it's a scenario audit, it routes to the `ComplianceAuditorAgent`.
 
-WORKDIR /app
+### B. Agent Memory & Context Engineering (Vadim's Session)
+Look at [src/database.py](file:///h:/Programming/dev/gdg-multi-agent-ai/src/database.py) and [src/agent.py](file:///h:/Programming/dev/gdg-multi-agent-ai/src/agent.py):
+- **SQLite Database Memory:** We use a local SQLite table (`session_memories`) to store key variables across different conversation turns (e.g. key: `director_name`, value: `Alice`).
+- **Context Injection:** On every query turn, the Compliance Auditor calls `get_session_memories` to pull all variables stored for that session ID. It inserts them dynamically into its **System Instruction** before sending the chat turn to Gemini. This allows the model to recall names, dates, or assets even in a fresh chat session without bloating the context window with raw transcripts.
+- **Memory Tools:** The agent uses tools `store_fact(key, value)` and `recall_fact(key)` to decide when it should read or write variables.
 
-# Prevent Python from writing .pyc files
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+### C. Cloud Run & Infrastructure (Rohan's Session)
+Look at [src/app.py](file:///h:/Programming/dev/gdg-multi-agent-ai/src/app.py) and [Dockerfile](file:///h:/Programming/dev/gdg-multi-agent-ai/Dockerfile):
+- **Flask Web Server:** To run a containerized agent on Google Cloud Run, we wrap it in a REST API. It listens on the `PORT` environment variable (default: `8080`).
+- **Dockerfile:** Packages our python environment, installs dependencies, copies the source code, and runs a production WSGI server (`gunicorn --bind 0.0.0.0:8080 src.app:app`).
+- **Application Default Credentials (ADC):** When deploying to Cloud Run, Vertex AI requests will authenticate automatically using the Cloud Run Service Account. Locally, we authenticate using `gcloud auth application-default login` which saves credentials locally for the Vertex AI SDK to fetch.
 
-# Install requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+---
 
-# Copy source code
-COPY src/ src/
+## ⚡ Step 4: Running the Code Locally
 
-# Run via high-performance production WSGI server
-EXPOSE 8080
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "src.app:app"]
+### 1. Authenticate Local SDK
+Open your terminal (PowerShell / Command Prompt) and run:
+```powershell
+gcloud auth login
+gcloud auth application-default login
+```
+*This shares your user credentials with the local Vertex AI client.*
+
+### 2. Configure project env
+Open [.env](file:///h:/Programming/dev/gdg-multi-agent-ai/.env) and update it with your GCP Project ID:
+```env
+GCP_PROJECT_ID=your-actual-gcp-project-id
+GCP_LOCATION=us-central1
 ```
 
-### 2. Cloud Run Deployment Command
-Run the single command below to package, containerize, and deploy the agent directly to Cloud Run:
+### 3. Run the CLI Test
+Verify the multi-agent orchestration and persistent SQLite memory work in the console:
+```powershell
+python src/main.py
+```
+*You will see trace logs showing `ComplianceAuditorAgent` calling `query_legal_analyst` which triggers `LegalAnalystAgent`, retrieves Section 181 from SQLite, and finally prints the audit report. It will then fetch the saved director's name in a subsequent query.*
+
+### 4. Open the Web Dashboard
+Run the Flask server locally:
+```powershell
+python src/app.py
+```
+Open your browser and navigate to:
+👉 **[http://127.0.0.1:8080](http://127.0.0.1:8080)**
+
+You will see:
+- A responsive, animated **Chat Box** to test scenarios.
+- **Live Thought Stream** showcasing real-time tool calls and agent routing.
+- **SQLite Session Memory Inspector** listing all key-value entries stored in the database.
+- Visual diagram of the architecture map.
+
+---
+
+## ☁️ Step 5: Containerization & Cloud Run Deployment
+
+Once you are ready to deploy your agent to Google Cloud Run, run the single command below from the project root:
+
 ```powershell
 gcloud run deploy legal-analyst-agent `
   --source . `
   --region us-central1 `
   --allow-unauthenticated
 ```
+This command will package the project using the [Dockerfile](file:///h:/Programming/dev/gdg-multi-agent-ai/Dockerfile), upload it to Artifact Registry, build it, and deploy it to a serverless endpoint on Cloud Run.
 
 ---
 
 ## 💡 Workshop Pro Tips
-1. **Design Clean Inter-Agent Protocols:** Focus on standard data exchanges (e.g., JSON schemas) rather than raw text messaging when coordinating between multiple agents.
-2. **Model Tier Selection:** Use `gemini-1.5-flash` for high-speed subtasks, routing, and database queries. Save `gemini-1.5-pro` for synthesis or highly complex reasoning tasks.
-3. **Evaluate Context Window vs. Databases:** Since Gemini 1.5 supports massive context lengths, discuss with Vadim Patsev about the latency and cost structures when holding user sessions in the context window compared to standard external caches.
+1. **Model Choices:** Use `gemini-1.5-flash` for fast, low-cost orchestrations, routing decisions, and tool calls. Keep `gemini-1.5-pro` for synthesizing huge reports or multi-document comparison.
+2. **Context vs Storage:** Gemini 1.5 has a 1M+ token context window. In Vadim's session, pay attention to the comparison between holding entire user sessions in the context window (convenient but higher latency/token costs) vs using lightweight SQLite caches to inject only summarized context facts (cost-effective, low latency).
+3. **Structured Schemas:** When agents send data to each other, use structured schemas (like JSON properties in tool calls) to prevent formatting inconsistencies.
