@@ -10,7 +10,7 @@ Your local machine is fully configured and verified for the workshop:
 *   **[x] Package Dependencies:** Installed `google-cloud-aiplatform`, `flask`, `python-dotenv`, and `gunicorn`.
 *   **[x] Google Cloud CLI:** Installed the `gcloud` tool suite under your local AppData folder.
 *   **[x] GCP Authentication:** Logged into your Google account and generated local Application Default Credentials (ADC).
-*   **[x] Quota Project & APIs:** Linked your quota project to `miennetestbootstrap` and successfully enabled the Google Cloud Vertex AI API (`aiplatform.googleapis.com`).
+*   **[x] Quota Project & APIs:** Linked your quota project to `gdg-agent-sayen-2026` and successfully enabled the Google Cloud Vertex AI API (`aiplatform.googleapis.com`).
 *   **[x] Playground Codebase:** Refactored the database schema with statutes and key-value session memories, created a collaborative multi-agent chain, and set up a local CLI runner and premium developer dashboard.
 
 ---
