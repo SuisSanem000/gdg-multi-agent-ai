@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from database import setup_database
+from database import setup_database, get_session_memories
 from agent import LegalAgent
 
 # Load local environment configuration
@@ -8,7 +8,7 @@ load_dotenv()
 
 def main():
     print("==================================================")
-    print("GDG Yerevan Workshop - Legal Agent CLI Demo")
+    print("GDG Yerevan Workshop - Multi-Agent & Memory CLI Demo")
     print("==================================================")
     
     # Check if Vertex credentials/project is configured
@@ -19,23 +19,63 @@ def main():
         print("Continuing initialization (will fail at Vertex AI calls if credentials are missing)...")
         print("--------------------------------------------------")
 
-    print("Setting up local SQLite database...")
+    print("Setting up local SQLite database with Statutes...")
     db_conn = setup_database()
     
-    print("Initializing Legal Agent...")
+    print("Initializing Multi-Agent System (LegalAgent Orchestrator)...")
     try:
         agent = LegalAgent(db_conn)
+        session_id = "cli-test-session"
         
-        # Test Query 1: Triggers SQLite tool lookup
-        query_1 = "What does Corporations Act Section 181 state about good faith?"
-        agent.run(query_1)
+        # Test Query 1: Multi-Agent Audit & SQLite Memory Writing
+        query_1 = "Audit this scenario: A director named Alice wants to approve a $200k contract for her husband's business."
+        print(f"\n>>> Running Query 1: {query_1}")
+        
+        trace_1 = []
+        response_1 = agent.run(query_1, session_id=session_id, trace=trace_1)
+        
+        print("\n--- Agent Execution Trace (Query 1) ---")
+        for step in trace_1:
+            if step['action'] == 'call_tool':
+                print(f"[{step['agent']}] 🔧 CALL TOOL: {step['tool']}({step.get('args', '')})")
+            elif step['action'] == 'tool_output':
+                # Truncate output for readability
+                out = str(step['output'])
+                trunc_out = out[:80] + "..." if len(out) > 80 else out
+                print(f"[{step['agent']}] 🔧 TOOL OUTPUT: {trunc_out}")
+            elif step['action'] == 'received_query':
+                print(f"[{step['agent']}] 📥 RECEIVED: {step['message']}")
+        
+        print(f"\n--- Final Auditor Answer ---\n{response_1}")
+        
+        print("\n--------------------------------------------------")
+        
+        # Inspect SQLite memories directly to prove it was saved in SQLite
+        mems = get_session_memories(db_conn, session_id)
+        print(f"SQLite Saved Memories for session '{session_id}':")
+        for k, v in mems.items():
+            print(f"  - {k}: {v}")
+            
+        print("--------------------------------------------------")
+        
+        # Test Query 2: Retrieve fact from SQLite Memory
+        query_2 = "What was the name of the director we audited in the previous query and what was the value of the transaction?"
+        print(f"\n>>> Running Query 2: {query_2}")
+        
+        trace_2 = []
+        response_2 = agent.run(query_2, session_id=session_id, trace=trace_2)
+        print(f"\n--- Final Auditor Answer ---\n{response_2}")
         
         print("--------------------------------------------------")
         
-        # Test Query 2: General LLM knowledge (does not trigger database tool)
-        query_2 = "Explain briefly what a conflict of interest is in general terms."
-        agent.run(query_2)
+        # Test Query 3: Direct Statute lookup (triggers Routing to LegalAnalystAgent)
+        query_3 = "What does Corporations Act Section 181 state?"
+        print(f"\n>>> Running Query 3: {query_3}")
         
+        trace_3 = []
+        response_3 = agent.run(query_3, session_id=session_id, trace=trace_3)
+        print(f"\n--- Final Analyst Answer ---\n{response_3}")
+
     except Exception as e:
         print(f"\n[ERROR] Failed to run agent: {e}")
         print("Ensure you have authenticated with: gcloud auth application-default login")
@@ -47,3 +87,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

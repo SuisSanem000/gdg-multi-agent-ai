@@ -14,6 +14,15 @@ def setup_database():
         )
     ''')
     
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS session_memories (
+            session_id TEXT,
+            key TEXT,
+            value TEXT,
+            PRIMARY KEY (session_id, key)
+        )
+    ''')
+    
     # Seeding Australian Corporations Act statutory definition data
     statutes_data = [
         (
@@ -34,3 +43,26 @@ def setup_database():
     )
     conn.commit()
     return conn
+
+def save_session_memory(conn, session_id: str, key: str, value: str):
+    """Saves or updates a fact in SQLite session memories."""
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR REPLACE INTO session_memories (session_id, key, value)
+        VALUES (?, ?, ?)
+    ''', (session_id, key.strip().lower(), value.strip()))
+    conn.commit()
+
+def get_session_memories(conn, session_id: str) -> dict:
+    """Retrieves all memory facts stored for a session as a key-value dictionary."""
+    cursor = conn.cursor()
+    cursor.execute('SELECT key, value FROM session_memories WHERE session_id = ?', (session_id,))
+    rows = cursor.fetchall()
+    return {row[0]: row[1] for row in rows}
+
+def clear_session_memories(conn, session_id: str):
+    """Deletes all memory facts for a session."""
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM session_memories WHERE session_id = ?', (session_id,))
+    conn.commit()
+

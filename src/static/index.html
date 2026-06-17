@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDG Yerevan AI Multi-Agent Workshop Prep Hub</title>
+    <!-- Modern Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- TOP DECORATION GLOWS -->
+        <div class="glow-orb top-left"></div>
+        <div class="glow-orb top-right"></div>
+
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-network-wired logo-icon"></i>
+                <div class="logo-text">
+                    <h1>GDG Yerevan AI Workshop</h1>
+                    <p>Multi-Agent & Session Memory Prep Hub</p>
+                </div>
+            </div>
+            <div class="session-controls">
+                <div class="input-group">
+                    <label for="session-id"><i class="fa-solid fa-fingerprint"></i> Session ID:</label>
+                    <input type="text" id="session-id" value="gdg-yerevan-demo" placeholder="e.g. session-1">
+                </div>
+                <button id="clear-memory-btn" class="btn btn-secondary" title="Clear SQLite memory for this session">
+                    <i class="fa-solid fa-trash-can"></i> Clear Memory
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="app-body">
+            
+            <!-- LEFT COLUMN: WORKSHOP ROADMAP & ARCHITECTURE MAP -->
+            <section class="panel-left card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-graduation-cap"></i> Workshop Prep Checklist</h2>
+                </div>
+                <div class="card-body scrollable">
+                    <div class="roadmap-checklist">
+                        <div class="checklist-item done">
+                            <input type="checkbox" id="check-gcp" checked disabled>
+                            <label for="check-gcp">
+                                <strong>Cloud & Infrastructure (Rohan)</strong>
+                                <span class="desc">GCP CLI, auth login, Cloud Run deployment readiness</span>
+                            </label>
+                        </div>
+                        <div class="checklist-item done">
+                            <input type="checkbox" id="check-tool" checked disabled>
+                            <label for="check-tool">
+                                <strong>Agentic Layer & Tools (Armen)</strong>
+                                <span class="desc">Function declaration definitions, tool calling workflows</span>
+                            </label>
+                        </div>
+                        <div class="checklist-item done">
+                            <input type="checkbox" id="check-orchestration" checked disabled>
+                            <label for="check-orchestration">
+                                <strong>Multi-Agent Collaboration</strong>
+                                <span class="desc">Auditor calling Legal Analyst tool-as-an-agent pattern</span>
+                            </label>
+                        </div>
+                        <div class="checklist-item done">
+                            <input type="checkbox" id="check-memory" checked disabled>
+                            <label for="check-memory">
+                                <strong>Memory & Context (Vadim)</strong>
+                                <span class="desc">SQLite key-value persistence & context-injected engineering</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="arch-section">
+                        <h3><i class="fa-solid fa-diagram-project"></i> System Architecture</h3>
+                        <div class="arch-diagram">
+                            <div class="arch-node user">
+                                <i class="fa-solid fa-desktop"></i>
+                                <span>Browser UI</span>
+                            </div>
+                            <div class="arch-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                            <div class="arch-node flask">
+                                <i class="fa-brands fa-python"></i>
+                                <span>Flask API<br><small>(Cloud Run)</small></span>
+                            </div>
+                            <div class="arch-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                            <div class="arch-subsystem">
+                                <div class="subsystem-node vertex">
+                                    <i class="fa-solid fa-brain"></i>
+                                    <span>Vertex AI<br><small>(Gemini 1.5)</small></span>
+                                </div>
+                                <div class="subsystem-node db">
+                                    <i class="fa-solid fa-database"></i>
+                                    <span>SQLite<br><small>(Session Memory)</small></span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="arch-info">When you ask a question, the Flask backend coordinates the Auditor agent. The Auditor pulls current memories from SQLite and dynamically communicates with the Legal Analyst agent and SQLite db using tools.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MIDDLE COLUMN: INTERACTIVE CHAT PLAYGROUND -->
+            <section class="panel-center card">
+                <div class="card-header chat-header">
+                    <div class="header-left">
+                        <span class="status-indicator online"></span>
+                        <h2><i class="fa-solid fa-robot"></i> Compliance Auditor Agent</h2>
+                    </div>
+                    <span class="badge">gemini-1.5-flash</span>
+                </div>
+                <div class="card-body chat-messages-container" id="chat-messages">
+                    <div class="message system-message">
+                        <p>Welcome! Try sending a compliance query to check conflicts of interest, or test persistent session memory across turns. Here are some prompts to try:</p>
+                        <div class="sample-prompts">
+                            <button class="sample-btn" data-query="Let's audit a scenario. A director named Alice wants to hire her sister's agency for a $200k contract. Analyze this.">
+                                <i class="fa-solid fa-play"></i> Audit Alice
+                            </button>
+                            <button class="sample-btn" data-query="Do you remember the director's name and the transaction size from our previous query?">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Recall Director Details
+                            </button>
+                            <button class="sample-btn" data-query="What does Corporations Act Section 182 state?">
+                                <i class="fa-solid fa-book-open"></i> Query Section 182
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chat-input" placeholder="Type a compliance scenario or ask questions..." rows="1"></textarea>
+                    <button id="send-btn" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send</button>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: TRACE WRITER & SQL MEMORY OBSERVER -->
+            <section class="panel-right">
+                
+                <!-- TOP PANEL: THOUGHT STREAM / COLLABORATION LOGS -->
+                <div class="card panel-thought-stream">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Live Agent Thought Stream</h2>
+                    </div>
+                    <div class="card-body scrollable thought-logs" id="thought-logs">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-spinner"></i>
+                            <p>Send a message to see agent routing, collaborative thought logs, and local tool executions in real-time.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM PANEL: SQLite PERSISTED FACT INSPECTOR -->
+                <div class="card panel-db-memory">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-database"></i> SQLite Session Memory</h2>
+                    </div>
+                    <div class="card-body scrollable db-variables" id="db-variables">
+                        <div class="empty-state-db">
+                            <p>No variables saved in SQLite yet. As you audit, the auditor agent will call <code>store_fact()</code> to remember things.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+        
+        <!-- FOOTER INFO -->
+        <footer class="app-footer">
+            <p>GDG Yerevan AI Multi-Agent Workshop prep application | Built with Vertex AI, Flask & SQLite</p>
+        </footer>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script src="app.js"></script>
+</body>
+</html>
