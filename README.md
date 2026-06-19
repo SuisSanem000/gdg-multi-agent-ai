@@ -67,7 +67,8 @@ This runs a multi-agent coaching loop, queries contact-jane, updates memory vari
    - [Running the Web Dashboard](#2-running-the-web-dashboard)
 9. [☁️ Containerization & Cloud Run Deployment](#-containerization--cloud-run-deployment)
 10. [🧪 Verified CLI Execution Case Study](#-verified-cli-execution-case-study)
-11. [💡 Workshop Pro Tips](#-workshop-pro-tips)
+11. [🖥️ Visual Web Dashboard Walkthrough Case Study](#-visual-web-dashboard-walkthrough-case-study)
+12. [💡 Workshop Pro Tips](#-workshop-pro-tips)
 
 ---
 
@@ -307,6 +308,37 @@ Jane Smith is the Managing Partner at Yerevan Ventures. Email: jane@yerevan.vc. 
 Database connection closed.
 ==================================================
 ```
+
+---
+
+## 🖥️ Visual Web Dashboard Walkthrough Case Study
+
+This section records the step-by-step CRM dashboard walkthrough verified end-to-end in the browser viewport:
+
+* **Step 1: Dashboard Initialization**
+  * The user loads the dashboard. The **Workshop Prep Checklist** displays pre-requisites completed, and the system architecture diagram demonstrates backend-agent data flows.
+  * *Artifact References:* [Step 1 Screenshot](step_1_init_1781877616765.png)
+
+* **Step 2: Triggering the Relationship Coach**
+  * The user clicks the **"Draft Email to John"** button. The chat submits the request: *"Draft a short follow-up email to contact-john. Tell him we should schedule a meet."*
+
+* **Step 3: Multi-Agent Collaboration & Tool Trace**
+  * The **Live Agent Thought Stream** logs details in real time:
+    1. `RelationshipCoachAgent` starts processing the prompt.
+    2. It calls the `query_contact_analyst` tool, delegating background queries to `ContactAnalystAgent`.
+    3. `ContactAnalystAgent` runs local SQL lookup tool `get_contact_details` querying SQLite database for John's role and email details.
+    4. The Coach logs output, formats the email template, and runs `store_fact` to persist relationship context variables (`last_contact_query` = `"John Doe (TechGen)"`).
+
+* **Step 4: Session Memory Update**
+  * The generated email template renders in the chat layout. Simultaneously, the **SQLite Session Memory** panel highlights in blue as it registers the newly persisted context fact variables inside SQLite database.
+  * *Artifact References:* [Step 4 Screenshot](step_4_email_drafted_1781877644899.png)
+
+* **Step 5: Memory Recall Evaluation**
+  * The user clicks **"Recall Contact Details"**. The Coach queries the SQLite memory key-value properties and successfully retrieves John's details without querying the analyst or referencing chat transcripts, showcasing **Context Engineering**.
+
+* **Step 6: Walkthrough Completed**
+  * The dashboard updates the checklist, verifying successful database writes, model fallback routing, and frontend rendering metrics.
+  * *Artifact References:* [Step 6 Screenshot](step_6_demo_completed_1781877697984.png) | [Walkthrough WebP Recording](crm_step_walkthrough_1781869992831.webp)
 
 ---
 

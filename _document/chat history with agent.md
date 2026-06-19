@@ -35,12 +35,14 @@ The project has been expanded into a fully functional web dashboard with the fol
 3. **Flask Web Server ([src/app.py](src/app.py)):**
    * Serves static dashboard resources and handles API queries (`POST /query`, `GET /memory`, `POST /clear`).
    * Configured with absolute paths for the `static` folder to prevent path resolution 404 errors.
-4. **Developer Dashboard ([src/static/index.html](src/static/index.html) & [src/static/app.js](src/static/app.js)):**
+4. **Developer Dashboard ([src/static/index.html](src/static/index.html) & [src/static/app.ts](src/static/app.ts)):**
    * Implements a clean, minimal Solarized Light UI.
    * Features a chat playground, live agent thought logs parser, and real-time SQLite database variable inspector.
-5. **CLI Runner ([src/main.py](src/main.py)):**
+5. **Node Compilation ([package.json](package.json)):**
+   * Provides scripts to compile the typed, self-explanatory TypeScript dashboard driver.
+6. **CLI Runner ([src/main.py](src/main.py)):**
    * Simplifies CLI testing by querying the coach, saving relationship facts to memory, retrieving them, and searching direct contact records.
-6. **Unified Roadmap ([README.md](README.md)):**
+7. **Unified Roadmap ([README.md](README.md)):**
    * Unified documentation, setup guides, checklists, and run instructions in a single root file.
    * Configured entirely with relative links for clean, portable rendering on other machines.
 
