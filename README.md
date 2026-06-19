@@ -4,31 +4,65 @@ This repository is a fully functional web application built as a **Multi-Agent &
 
 Since you are a web developer who knows Python syntax, you can think of this project as a standard backend API paired with a frontend dashboard, but with an AI "brain" inserted in the middle.
 
+Instead of a generic template, this project implements a **Smart Contact Notebook & Relationship Coach (Personal CRM)**.
+
+---
+
+## 🚀 Quick Start: What is this App & How to Use It?
+
+### What is this App?
+This app is an interactive **Personal CRM & relationship coach playground**. It combines a Flask backend and a modern glassmorphic web dashboard with Google Gemini 1.5 models to demonstrate:
+1. **Multi-Agent Orchestration:** The app routes queries dynamically between a **Contact Analyst Agent** (who reads records from SQLite) and a **Relationship Coach Agent** (who offers follow-up email drafts and strategic relationship advice).
+2. **Context Engineering & Session Memory:** The coach agent remembers details about you and the session (like your name or topic discussed) across chat turns by storing them in a local SQLite database and dynamically injecting them into Gemini's system instructions. This keeps the LLM context usage low and context recall high.
+
+### How to Use and Check It?
+You can interact with the app in two ways:
+
+#### 1. Via the Web Dashboard (Recommended)
+1. **Start the Flask server:**
+   ```powershell
+   python src/app.py
+   ```
+2. **Open the App:** Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080) in your browser.
+3. **Chat and Check:** 
+   * Click **"Draft Email to John"** to send a sample query.
+   * Look at the **Live Agent Thought Stream** on the right. You will see the agents route the message, fetch John's profile from the database, draft the email, and store context (like John's company `TechCorp` and role) to SQLite.
+   * Look at the **SQLite Session Memory** panel on the bottom right. You'll see variables like `contact_name` and `company_name` appear in real-time.
+   * Click **"Recall Contact Details"** (or ask "Who did we just draft an email for?") to verify the agent successfully retrieves those stored context memories from SQLite.
+
+#### 2. Via the Command Line Interface (CLI)
+Run the tester runner to execute simulated interactions directly in your terminal:
+```powershell
+python src/main.py
+```
+This runs a multi-agent coaching loop, queries contact-jane, updates memory variables, and prints execution traces directly in the terminal console.
+
 ---
 
 ## 📌 Table of Contents
-1. [✅ Local Machine Preparation Status](#-local-machine-preparation-status)
-2. [📅 Workshop Details](#-workshop-details)
-3. [🔍 Detailed Breakdown of Technologies & Libraries](#-detailed-breakdown-of-technologies--libraries)
+1. [🚀 Quick Start: What is this App & How to Use It?](#-quick-start-what-is-this-app--how-to-use-it)
+2. [✅ Local Machine Preparation Status](#-local-machine-preparation-status)
+3. [📅 Workshop Details](#-workshop-details)
+4. [🔍 Detailed Breakdown of Technologies & Libraries](#-detailed-breakdown-of-technologies--libraries)
    - [The Web Server & Routing](#1-the-web-server--routing-flask--gunicorn)
    - [The AI "Brain"](#2-the-ai-brain-google-cloud-vertex-ai)
    - [The Database & Memory](#3-the-database--memory-sqlite)
    - [Deployment & Infrastructure](#4-deployment--infrastructure-docker--dotenv)
-4. [📂 Codebase Directory & Folder Structure](#-codebase-directory--folder-structure)
-5. [🏛️ Core Architecture & Concept Walkthrough](#-core-architecture--concept-walkthrough)
+5. [📂 Codebase Directory & Folder Structure](#-codebase-directory--folder-structure)
+6. [🏛️ Core Architecture & Concept Walkthrough](#-core-architecture--concept-walkthrough)
    - [Database & Memory Management](#-database--memory-management)
    - [Multi-Agent Collaboration Pattern](#-multi-agent-collaboration-pattern)
    - [Orchestrator Routing](#-orchestrator-routing)
    - [Web Dashboard Features](#-web-dashboard-features)
-6. [🛠️ Step-by-Step Setup Guide](#-step-by-step-setup-guide)
+7. [🛠️ Step-by-Step Setup Guide](#-step-by-step-setup-guide)
    - [Step 1: Align Your Python Interpreter (VS Code)](#step-1-align-your-python-interpreter-vs-code)
    - [Step 2: Authenticate Local Google Cloud SDK](#step-2-authenticate-local-google-cloud-sdk)
    - [Step 3: Configure Environment Variables](#step-3-configure-environment-variables)
-7. [⚡ How to Run the Playground Locally](#-how-to-run-the-playground-locally)
+8. [⚡ How to Run the Playground Locally](#-how-to-run-the-playground-locally)
    - [Running the CLI Demo](#1-running-the-cli-demo)
    - [Running the Web Dashboard](#2-running-the-web-dashboard)
-8. [☁️ Containerization & Cloud Run Deployment](#-containerization--cloud-run-deployment)
-9. [💡 Workshop Pro Tips](#-workshop-pro-tips)
+9. [☁️ Containerization & Cloud Run Deployment](#-containerization--cloud-run-deployment)
+10. [💡 Workshop Pro Tips](#-workshop-pro-tips)
 
 ---
 
@@ -40,7 +74,7 @@ Your local machine is fully configured and verified for the workshop:
 * **[x] Google Cloud CLI:** Installed the `gcloud` tool suite.
 * **[x] GCP Authentication:** Logged into your Google account and generated local Application Default Credentials (ADC).
 * **[x] Quota Project & APIs:** Linked your quota project to `gdg-agent-sayen-2026` and successfully enabled the Google Cloud Vertex AI API (`aiplatform.googleapis.com`).
-* **[x] Playground Codebase:** Refactored the database schema with statutes and key-value session memories, created a collaborative multi-agent chain, and set up a local CLI runner and premium developer dashboard.
+* **[x] Playground Codebase:** Refactored the database schema with contacts and key-value session memories, created a collaborative multi-agent chain, and set up a local CLI runner and premium developer dashboard.
 
 ---
 
@@ -62,11 +96,11 @@ Your local machine is fully configured and verified for the workshop:
 ### 2. The AI "Brain" (Google Cloud Vertex AI)
 * **`google-cloud-aiplatform`:** This is Google's official Python library for interacting with their AI models, like `gemini-1.5-flash`.
 * **Function Calling (Tools):** The app uses this library to give the AI superpowers. Using `FunctionDeclaration`, the code describes normal Python functions (like searching a database) to the AI. The AI can then intelligently decide to "call" these tools when a user asks a specific question.
-* **Multi-Agent Collaboration:** Instead of one massive AI doing everything, the app routes tasks between multiple specialized agents (defined in [src/agent.py](src/agent.py)). For example, the `ComplianceAuditorAgent` talks to the user but does not have database access. Instead, it delegates legal lookups to a secondary `LegalAnalystAgent`.
+* **Multi-Agent Collaboration:** Instead of one massive AI doing everything, the app routes tasks between multiple specialized agents (defined in [src/agent.py](src/agent.py)). For example, the `RelationshipCoachAgent` talks to the user but does not have database access. Instead, it delegates contact lookups to a secondary `ContactAnalystAgent`.
 
 ### 3. The Database & Memory (SQLite)
 * **`sqlite3`:** This is a database engine built directly into Python's standard library, requiring no extra installation. The project uses it (in [src/database.py](src/database.py)) to run a fast, in-memory mock database.
-* **Context Engineering:** Sending an entire long chat history back and forth to an AI model uses a lot of tokens and costs more money. To optimize this, the app uses SQLite to store specific facts the user mentions (e.g., saving `director_name: Alice` as a key-value pair). Before sending a new user message to the AI, the backend pulls these facts from SQLite and invisibly injects them into the AI's "System Instructions," giving the AI a persistent memory without the huge token cost.
+* **Context Engineering:** Sending an entire long chat history back and forth to an AI model uses a lot of tokens and costs more money. To optimize this, the app uses SQLite to store specific facts the user mentions (e.g., saving `user_name: David` as a key-value pair). Before sending a new user message to the AI, the backend pulls these facts from SQLite and invisibly injects them into the AI's "System Instructions," giving the AI a persistent memory without the huge token cost.
 
 ### 4. Deployment & Infrastructure (Docker & Dotenv)
 * **Docker ([Dockerfile](Dockerfile)):** The project is containerized using a lightweight Python image (`python:3.11-slim`). This bundles the Python code, the installed libraries, and the server together so it can be deployed seamlessly to **Google Cloud Run** (a serverless hosting environment).
@@ -86,8 +120,8 @@ gdg-multi-agent-ai/
 ├── Dockerfile              # Docker container configuration for Cloud Run
 └── src/
     ├── __init__.py
-    ├── database.py         # SQLite setup: Statutes + Session Memory
-    ├── agent.py            # Multi-agent system: Analyst, Auditor, and Orchestrator
+    ├── database.py         # SQLite setup: Mock Contacts + Session Memory
+    ├── agent.py            # Multi-agent system: Analyst, Coach, and Orchestrator
     ├── main.py             # CLI runner script with trace outputs
     ├── app.py              # Flask app serving static frontend and API endpoints
     └── static/
@@ -103,25 +137,25 @@ gdg-multi-agent-ai/
 The project demonstrates all three key themes of the workshop: Cloud Run deployment, multi-agent orchestration, and context/session memory engineering.
 
 ### 🗄️ Database & Memory Management
-* **Statutes Table:** Persists the Corporations Act rules (specifically Sections 181 and 182).
-* **Session Memories Table:** A key-value table `(session_id, key, value)`. This stores persistent facts (e.g. director names, transactions, audit histories) across conversation turns.
-* **Context Injection:** When the auditor agent runs, it retrieves all key-value memories for the current `session_id` using [get_session_memories](src/database.py#L56) and injects them directly into the system instructions. This demonstrates **Context Engineering** (Vadim Patsev's session), providing the AI with memory context without passing raw conversation transcripts.
+* **Contacts Table:** Persists mock contact profile data (like email, company, and background details).
+* **Session Memories Table:** A key-value table `(session_id, key, value)`. This stores persistent relationship facts (e.g. user names, schedules, preferences) across conversation turns.
+* **Context Injection:** When the coach agent runs, it retrieves all key-value memories for the current `session_id` using [get_session_memories](src/database.py#L56) and injects them directly into the system instructions. This demonstrates **Context Engineering** (Vadim Patsev's session), providing the AI with memory context without passing raw conversation transcripts.
 
 ### 🤖 Multi-Agent Collaboration Pattern
 We moved from a single agent to a collaborative multi-agent loop inside [src/agent.py](src/agent.py):
-1. **[LegalAnalystAgent](src/agent.py#L21):** Accesses the SQLite database using the `get_statute_definition` function tool to retrieve legal clauses.
-2. **[ComplianceAuditorAgent](src/agent.py#L114):** Audits business scenarios. Rather than accessing the database directly, it has a tool-as-an-agent called `query_legal_analyst`. When it decides it needs legal sections, it calls this tool, which runs `LegalAnalystAgent`. It also reads/writes facts using the `recall_fact` and `store_fact` memory tools.
+1. **[ContactAnalystAgent](src/agent.py#L21):** Accesses the SQLite database using the `get_contact_details` function tool to retrieve contact information.
+2. **[RelationshipCoachAgent](src/agent.py#L114):** Helps the user manage professional networks. Rather than accessing the database directly, it has a tool-as-an-agent called `query_contact_analyst`. When it decides it needs details on a contact, it calls this tool, which runs `ContactAnalystAgent`. It also reads/writes facts using the `recall_fact` and `store_fact` memory tools.
 
 ### 🔀 Orchestrator Routing
-The **[LegalAgent](src/agent.py#L274)** acts as the gateway/orchestrator:
+The **[SmartNotebookOrchestrator](src/agent.py#L274)** acts as the gateway/orchestrator:
 * It inspects the input query:
-  * Direct statutory queries (e.g., containing "Section", "Statute", or "corp-") are routed directly to the **[LegalAnalystAgent](src/agent.py#L21)**.
-  * Conversational queries, conflict statements, or business scenario audits are routed to the **[ComplianceAuditorAgent](src/agent.py#L114)**.
+  * Direct contact searches (e.g., containing "contact-", "profile", or "contact details") are routed directly to the **[ContactAnalystAgent](src/agent.py#L21)**.
+  * Professional networking queries, drafting follow-ups, and relationship advice are routed to the **[RelationshipCoachAgent](src/agent.py#L114)**.
 
 ### 🖥️ Web Dashboard Features
 We built a single-page developer dashboard served directly by the Flask server:
-* **Interactive Chat Interface:** Submit scenario audits to the Compliance Auditor.
-* **Live Agent Thought Stream:** Displays step-by-step traces of agent interactions, showing exactly when the Auditor calls the Legal Analyst, when SQLite tools execute, and the returned data.
+* **Interactive Chat Interface:** Submit relationship coaching queries or networking requests.
+* **Live Agent Thought Stream:** Displays step-by-step traces of agent interactions, showing exactly when the Coach calls the Contact Analyst, when SQLite tools execute, and the returned data.
 * **SQLite Session Memory Inspector:** Shows a real-time list of key-value pairs stored in the SQLite database for the active session.
 * **Cloud Architecture & Prep Guide:** Visual diagram and checklist for the workshop.
 
@@ -157,11 +191,11 @@ GCP_LOCATION=us-central1
 ## ⚡ How to Run the Playground Locally
 
 ### 1. Running the CLI Demo
-Execute the CLI testing run which simulates an audit, stores facts in SQLite, and retrieves them in a subsequent query:
+Execute the CLI testing run which simulates a relationship coaching scenario, stores facts in SQLite, and retrieves them in a subsequent query:
 ```powershell
 python src/main.py
 ```
-*This runner ([src/main.py](src/main.py)) will demonstrate a compliance audit scenario, save audited variables into SQLite memory, recall those variables, and perform a direct statutory lookup using orchestrator routing.*
+*This runner ([src/main.py](src/main.py)) will demonstrate a coaching scenario, save audited variables into SQLite memory, recall those variables, and perform a direct contact profile lookup using orchestrator routing.*
 
 ### 2. Running the Web Dashboard
 Start the local Flask development web server:

@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!memory || Object.keys(memory).length === 0) {
             dbVariables.innerHTML = `
                 <div class="empty-state-db">
-                    <p>No variables saved in SQLite yet. As you audit, the auditor agent will call <code>store_fact()</code> to remember things.</p>
+                    <p>No variables saved in SQLite yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
                 </div>
             `;
             return;
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const entryDiv = document.createElement('div');
             
             // Assign class based on the executing agent
-            const agentClass = entry.agent === 'LegalAnalystAgent' ? 'analyst' : 'auditor';
+            const agentClass = entry.agent === 'ContactAnalystAgent' ? 'analyst' : 'auditor';
             entryDiv.className = `trace-entry ${agentClass}`;
             
             let contentHtml = '';

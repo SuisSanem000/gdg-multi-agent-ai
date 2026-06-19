@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDG Yerevan AI Multi-Agent Workshop Prep Hub</title>
+    <title>GDG Yerevan AI Workshop: Smart Contact Notebook</title>
     <!-- Modern Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="app-container">
@@ -21,10 +21,10 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="logo-area">
-                <i class="fa-solid fa-network-wired logo-icon"></i>
+                <i class="fa-solid fa-address-book logo-icon"></i>
                 <div class="logo-text">
                     <h1>GDG Yerevan AI Workshop</h1>
-                    <p>Multi-Agent & Session Memory Prep Hub</p>
+                    <p>Smart Contact Notebook & Relationship Coach</p>
                 </div>
             </div>
             <div class="session-controls">
@@ -66,7 +66,7 @@
                             <input type="checkbox" id="check-orchestration" checked disabled>
                             <label for="check-orchestration">
                                 <strong>Multi-Agent Collaboration</strong>
-                                <span class="desc">Auditor calling Legal Analyst tool-as-an-agent pattern</span>
+                                <span class="desc">Relationship Coach calling Contact Analyst tool-as-an-agent pattern</span>
                             </label>
                         </div>
                         <div class="checklist-item done">
@@ -102,7 +102,7 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="arch-info">When you ask a question, the Flask backend coordinates the Auditor agent. The Auditor pulls current memories from SQLite and dynamically communicates with the Legal Analyst agent and SQLite db using tools.</p>
+                        <p class="arch-info">When you ask a question, the Flask backend coordinates the Relationship Coach agent. The Coach pulls current memories from SQLite and dynamically communicates with the Contact Analyst agent and SQLite db using tools.</p>
                     </div>
                 </div>
             </section>
@@ -112,28 +112,28 @@
                 <div class="card-header chat-header">
                     <div class="header-left">
                         <span class="status-indicator online"></span>
-                        <h2><i class="fa-solid fa-robot"></i> Compliance Auditor Agent</h2>
+                        <h2><i class="fa-solid fa-robot"></i> Relationship Coach Agent</h2>
                     </div>
                     <span class="badge">gemini-1.5-flash</span>
                 </div>
                 <div class="card-body chat-messages-container" id="chat-messages">
                     <div class="message system-message">
-                        <p>Welcome! Try sending a compliance query to check conflicts of interest, or test persistent session memory across turns. Here are some prompts to try:</p>
+                        <p>Welcome! Try asking contact notebook questions, drafting follow-up emails, or testing persistent session memory across turns. Here are some prompts to try:</p>
                         <div class="sample-prompts">
-                            <button class="sample-btn" data-query="Let's audit a scenario. A director named Alice wants to hire her sister's agency for a $200k contract. Analyze this.">
-                                <i class="fa-solid fa-play"></i> Audit Alice
+                            <button class="sample-btn" data-query="Draft a short follow-up email to contact-john. Tell him we should schedule a meet.">
+                                <i class="fa-solid fa-play"></i> Draft Email to John
                             </button>
-                            <button class="sample-btn" data-query="Do you remember the director's name and the transaction size from our previous query?">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Recall Director Details
+                            <button class="sample-btn" data-query="Do you remember the contact's name and company from our previous query?">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Recall Contact Details
                             </button>
-                            <button class="sample-btn" data-query="What does Corporations Act Section 182 state?">
-                                <i class="fa-solid fa-book-open"></i> Query Section 182
+                            <button class="sample-btn" data-query="Get details for contact-jane">
+                                <i class="fa-solid fa-book-open"></i> Query Jane
                             </button>
                         </div>
                     </div>
                 </div>
                 <div class="chat-input-area">
-                    <textarea id="chat-input" placeholder="Type a compliance scenario or ask questions..." rows="1"></textarea>
+                    <textarea id="chat-input" placeholder="Type a contact request or ask for networking/relationship advice..." rows="1"></textarea>
                     <button id="send-btn" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send</button>
                 </div>
             </section>
@@ -161,7 +161,7 @@
                     </div>
                     <div class="card-body scrollable db-variables" id="db-variables">
                         <div class="empty-state-db">
-                            <p>No variables saved in SQLite yet. As you audit, the auditor agent will call <code>store_fact()</code> to remember things.</p>
+                            <p>No variables saved in SQLite yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
                         </div>
                     </div>
                 </div>
@@ -177,6 +177,6 @@
     </div>
 
     <!-- MAIN APP SCRIPT -->
-    <script src="app.js"></script>
+    <script src="/static/app.js"></script>
 </body>
 </html>

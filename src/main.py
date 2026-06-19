@@ -1,14 +1,14 @@
 import os
 from dotenv import load_dotenv
 from database import setup_database, get_session_memories
-from agent import LegalAgent
+from agent import SmartNotebookOrchestrator
 
 # Load local environment configuration
 load_dotenv()
 
 def main():
     print("==================================================")
-    print("GDG Yerevan Workshop - Multi-Agent & Memory CLI Demo")
+    print("GDG Yerevan Workshop - Smart Contact Notebook Demo")
     print("==================================================")
     
     # Check if Vertex credentials/project is configured
@@ -19,16 +19,16 @@ def main():
         print("Continuing initialization (will fail at Vertex AI calls if credentials are missing)...")
         print("--------------------------------------------------")
 
-    print("Setting up local SQLite database with Statutes...")
+    print("Setting up local SQLite database with Contacts...")
     db_conn = setup_database()
     
-    print("Initializing Multi-Agent System (LegalAgent Orchestrator)...")
+    print("Initializing Multi-Agent System (SmartNotebookOrchestrator)...")
     try:
-        agent = LegalAgent(db_conn)
+        agent = SmartNotebookOrchestrator(db_conn)
         session_id = "cli-test-session"
         
-        # Test Query 1: Multi-Agent Audit & SQLite Memory Writing
-        query_1 = "Audit this scenario: A director named Alice wants to approve a $200k contract for her husband's business."
+        # Test Query 1: Relationship Coaching & SQLite Memory Writing
+        query_1 = "Draft a short follow-up email for a new contact named John Doe who works at TechCorp."
         print(f"\n>>> Running Query 1: {query_1}")
         
         trace_1 = []
@@ -46,7 +46,7 @@ def main():
             elif step['action'] == 'received_query':
                 print(f"[{step['agent']}] 📥 RECEIVED: {step['message']}")
         
-        print(f"\n--- Final Auditor Answer ---\n{response_1}")
+        print(f"\n--- Final Coach Answer ---\n{response_1}")
         
         print("\n--------------------------------------------------")
         
@@ -59,17 +59,17 @@ def main():
         print("--------------------------------------------------")
         
         # Test Query 2: Retrieve fact from SQLite Memory
-        query_2 = "What was the name of the director we audited in the previous query and what was the value of the transaction?"
+        query_2 = "What was the name of the contact we just drafted an email for, and what company do they work at?"
         print(f"\n>>> Running Query 2: {query_2}")
         
         trace_2 = []
         response_2 = agent.run(query_2, session_id=session_id, trace=trace_2)
-        print(f"\n--- Final Auditor Answer ---\n{response_2}")
+        print(f"\n--- Final Coach Answer ---\n{response_2}")
         
         print("--------------------------------------------------")
         
-        # Test Query 3: Direct Statute lookup (triggers Routing to LegalAnalystAgent)
-        query_3 = "What does Corporations Act Section 181 state?"
+        # Test Query 3: Direct Profile lookup (triggers Routing to ContactAnalystAgent)
+        query_3 = "Get details for contact-jane"
         print(f"\n>>> Running Query 3: {query_3}")
         
         trace_3 = []
@@ -87,4 +87,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

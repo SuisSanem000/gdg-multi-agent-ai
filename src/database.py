@@ -1,16 +1,16 @@
 import sqlite3
 
 def setup_database():
-    """Initializes an in-memory SQLite database and seeds it with statutes."""
-    # We use in-memory database for local test runs
+    """Initializes an in-memory SQLite database and seeds it with mock contacts."""
+    # We use an in-memory database for local test runs
     conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS statutes (
+        CREATE TABLE IF NOT EXISTS contacts (
             id TEXT PRIMARY KEY,
-            title TEXT,
-            clause TEXT
+            name TEXT,
+            details TEXT
         )
     ''')
     
@@ -23,23 +23,23 @@ def setup_database():
         )
     ''')
     
-    # Seeding Australian Corporations Act statutory definition data
-    statutes_data = [
+    # Seeding mock contacts for the Smart Contact Notebook
+    contacts_data = [
         (
-            'corp-181',
-            'Corporations Act Section 181',
-            'Good faith: A director or other officer of a corporation must exercise their powers and discharge their duties in good faith in the best interests of the corporation and for a proper purpose.'
+            'contact-john',
+            'John Doe',
+            'Role: VP of Marketing at TechCorp. Email: john@techcorp.com. Background: Met at GDG Yerevan AI Workshop. Interested in integrating multi-agent AI systems into marketing workflows.'
         ),
         (
-            'corp-182',
-            'Corporations Act Section 182',
-            'Use of position: A director, secretary, other officer or employee of a corporation must not improperly use their position to gain an advantage for themselves or someone else or cause detriment to the corporation.'
+            'contact-jane',
+            'Jane Smith',
+            'Role: Managing Partner at Yerevan Ventures. Email: jane@yerevan.vc. Background: Looking to fund pre-seed AI startups in Armenia. Prefers communication via Telegram.'
         )
     ]
     
     cursor.executemany(
-        'INSERT OR REPLACE INTO statutes (id, title, clause) VALUES (?, ?, ?)',
-        statutes_data
+        'INSERT OR REPLACE INTO contacts (id, name, details) VALUES (?, ?, ?)',
+        contacts_data
     )
     conn.commit()
     return conn
@@ -65,4 +65,3 @@ def clear_session_memories(conn, session_id: str):
     cursor = conn.cursor()
     cursor.execute('DELETE FROM session_memories WHERE session_id = ?', (session_id,))
     conn.commit()
-

@@ -18,54 +18,55 @@ def _extract_function_call(response):
         print(f"DEBUG: Error parsing function calls: {e}")
     return None
 
-class LegalAnalystAgent:
+
+class ContactAnalystAgent:
     def __init__(self, db_conn):
         self.db = db_conn
         
         # Define the Function Tool declaration
-        self.get_statute_declaration = FunctionDeclaration(
-            name="get_statute_definition",
-            description="Retrieves the official text/clause of a specific Corporations Act section using its statute ID.",
+        self.get_contact_declaration = FunctionDeclaration(
+            name="get_contact_details",
+            description="Retrieves the background details, role, and email of a contact using their contact ID.",
             parameters={
                 "type": "OBJECT",
                 "properties": {
-                    "statute_id": {
+                    "contact_id": {
                         "type": "STRING",
-                        "description": 'The unique ID of the statute, e.g., "corp-181" or "corp-182".',
+                        "description": 'The unique ID of the contact, e.g., "contact-john" or "contact-jane".',
                     }
                 },
-                "required": ["statute_id"],
+                "required": ["contact_id"],
             }
         )
-        self.db_tool = Tool(function_declarations=[self.get_statute_declaration])
+        self.db_tool = Tool(function_declarations=[self.get_contact_declaration])
         
         self.model = GenerativeModel(
             model_name="gemini-1.5-flash",
             tools=[self.db_tool],
             system_instruction=(
-                "You are a Legal Analyst Agent specializing in Australian Corporations Law. "
-                "Your job is to answer statutory questions using the 'get_statute_definition' tool. "
-                "Always use this tool to retrieve exact text. Be precise and cite the sections."
+                "You are a Contact Analyst Agent. Your job is to answer questions about contacts using "
+                "the 'get_contact_details' tool. Always use this tool to retrieve exact contact data. "
+                "Be precise and cite the contact details retrieved."
             )
         )
 
-    def _execute_db_query(self, statute_id: str) -> str:
+    def _execute_db_query(self, contact_id: str) -> str:
         """Executes a local SQL search based on tool parameters requested by Gemini."""
         cursor = self.db.cursor()
-        cursor.execute("SELECT clause FROM statutes WHERE id = ?", (statute_id,))
+        cursor.execute("SELECT details FROM contacts WHERE id = ?", (contact_id,))
         result = cursor.fetchone()
         if result:
             return result[0]
-        return f"Statute '{statute_id}' not found in database."
+        return f"Contact '{contact_id}' not found in database."
 
     def run(self, user_input: str, trace: list = None) -> str:
         if trace is None:
             trace = []
             
         trace.append({
-            "agent": "LegalAnalystAgent",
+            "agent": "ContactAnalystAgent",
             "action": "received_query",
-            "message": f"Processing legal query: '{user_input}'"
+            "message": f"Processing contact query: '{user_input}'"
         })
         
         chat = self.model.start_chat()
@@ -76,20 +77,20 @@ class LegalAnalystAgent:
             if not function_call:
                 break
                 
-            if function_call.name == "get_statute_definition":
-                statute_id = function_call.args.get("statute_id")
+            if function_call.name == "get_contact_details":
+                contact_id = function_call.args.get("contact_id")
                 trace.append({
-                    "agent": "LegalAnalystAgent",
+                    "agent": "ContactAnalystAgent",
                     "action": "call_tool",
-                    "tool": "get_statute_definition",
-                    "args": {"statute_id": statute_id}
+                    "tool": "get_contact_details",
+                    "args": {"contact_id": contact_id}
                 })
                 
-                tool_output = self._execute_db_query(statute_id)
+                tool_output = self._execute_db_query(contact_id)
                 trace.append({
-                    "agent": "LegalAnalystAgent",
+                    "agent": "ContactAnalystAgent",
                     "action": "tool_output",
-                    "tool": "get_statute_definition",
+                    "tool": "get_contact_details",
                     "output": tool_output
                 })
                 
@@ -104,28 +105,28 @@ class LegalAnalystAgent:
                 
         final_text = response.text
         trace.append({
-            "agent": "LegalAnalystAgent",
+            "agent": "ContactAnalystAgent",
             "action": "final_response",
             "message": final_text
         })
         return final_text
 
 
-class ComplianceAuditorAgent:
+class RelationshipCoachAgent:
     def __init__(self, db_conn, analyst_agent):
         self.db = db_conn
         self.analyst = analyst_agent
         
         # Tools definitions
         self.query_analyst_declaration = FunctionDeclaration(
-            name="query_legal_analyst",
-            description="Queries the Legal Analyst agent to retrieve official statute details or ask specific legal compliance questions about Australian Corporations law.",
+            name="query_contact_analyst",
+            description="Queries the Contact Analyst agent to retrieve official background details or ask specific profile questions about a contact.",
             parameters={
                 "type": "OBJECT",
                 "properties": {
                     "query": {
                         "type": "STRING",
-                        "description": "The specific query to send to the Legal Analyst, e.g. 'What does Section 181 say?' or 'Search for regulations on conflict of interest'.",
+                        "description": "The specific query to send to the Contact Analyst, e.g. 'What are the details of contact-john?'.",
                     }
                 },
                 "required": ["query"],
@@ -134,7 +135,7 @@ class ComplianceAuditorAgent:
         
         self.recall_fact_declaration = FunctionDeclaration(
             name="recall_fact",
-            description="Retrieves a previously saved fact or context information by its key (e.g., 'director_name', 'company_name', 'transaction_value'). Useful for remembering details from earlier in the session.",
+            description="Retrieves a previously saved relationship fact or context information by its key (e.g., 'user_name', 'last_meeting_date', 'action_item'). Useful for remembering details from earlier in the session.",
             parameters={
                 "type": "OBJECT",
                 "properties": {
@@ -149,7 +150,7 @@ class ComplianceAuditorAgent:
         
         self.store_fact_declaration = FunctionDeclaration(
             name="store_fact",
-            description="Saves an important fact or context variable into the session memory to refer to later (e.g. key='director_name', value='David'). Always store key facts you discover during conversation.",
+            description="Saves an important context variable into the session memory to refer to later (e.g. key='user_name', value='David'). Always store key facts you discover during conversation.",
             parameters={
                 "type": "OBJECT",
                 "properties": {
@@ -184,11 +185,11 @@ class ComplianceAuditorAgent:
                 memory_str += f"- {k}: {v}\n"
                 
         system_instruction = (
-            "You are a Compliance Auditor Agent. Your job is to audit company transactions and director decisions "
-            "(like potential conflicts of interest, good faith, or use of position). You must retrieve the relevant "
-            "legal statutes by calling the 'query_legal_analyst' tool. You should also remember key details (like names, "
-            "companies, values) by storing them in session memory (using 'store_fact') or retrieving them (using 'recall_fact'). "
-            "Synthesize a professional audit report outlining any compliance issues. Refer to stored memories to personalize replies.\n"
+            "You are a Relationship Coach Agent. Your job is to help users manage their professional network, "
+            "draft follow-up templates, and suggest networking strategies. You must retrieve contact background info "
+            "by calling the 'query_contact_analyst' tool. You should also remember key details (like user preferences, "
+            "meeting outcomes, or schedules) by storing them in session memory (using 'store_fact') or retrieving them "
+            "(using 'recall_fact'). Synthesize a friendly, professional response. Refer to stored memories to personalize replies.\n"
             f"{memory_str}"
         )
         
@@ -203,9 +204,9 @@ class ComplianceAuditorAgent:
             trace = []
             
         trace.append({
-            "agent": "ComplianceAuditorAgent",
+            "agent": "RelationshipCoachAgent",
             "action": "received_query",
-            "message": f"Auditing query: '{user_input}'"
+            "message": f"Relationship coaching query: '{user_input}'"
         })
         
         model = self._get_model(session_id)
@@ -224,14 +225,14 @@ class ComplianceAuditorAgent:
             args = function_call.args
             
             trace.append({
-                "agent": "ComplianceAuditorAgent",
+                "agent": "RelationshipCoachAgent",
                 "action": "call_tool",
                 "tool": tool_name,
                 "args": dict(args)
             })
             
             tool_output = ""
-            if tool_name == "query_legal_analyst":
+            if tool_name == "query_contact_analyst":
                 sub_query = args.get("query")
                 tool_output = self.analyst.run(sub_query, trace=trace)
             elif tool_name == "recall_fact":
@@ -249,7 +250,7 @@ class ComplianceAuditorAgent:
                 tool_output = f"Unknown tool: {tool_name}"
                 
             trace.append({
-                "agent": "ComplianceAuditorAgent",
+                "agent": "RelationshipCoachAgent",
                 "action": "tool_output",
                 "tool": tool_name,
                 "output": tool_output
@@ -264,15 +265,15 @@ class ComplianceAuditorAgent:
             
         final_text = response.text
         trace.append({
-            "agent": "ComplianceAuditorAgent",
+            "agent": "RelationshipCoachAgent",
             "action": "final_response",
             "message": final_text
         })
         return final_text
 
 
-class LegalAgent:
-    """Orchestrator class that maintains backward compatibility while routing requests."""
+class SmartNotebookOrchestrator:
+    """Orchestrator class that maintains compatibility while routing requests."""
     def __init__(self, db_conn):
         self.db = db_conn
         
@@ -282,19 +283,18 @@ class LegalAgent:
         vertexai.init(project=project, location=location)
 
         # Instantiate sub-agents
-        self.analyst = LegalAnalystAgent(db_conn)
-        self.auditor = ComplianceAuditorAgent(db_conn, self.analyst)
+        self.analyst = ContactAnalystAgent(db_conn)
+        self.auditor = RelationshipCoachAgent(db_conn, self.analyst)
 
     def run(self, user_input: str, session_id: str = "default", trace: list = None) -> str:
         if trace is None:
             trace = []
             
         lower_input = user_input.lower()
-        # Simple routing logic: if looking for exact sections/clauses, use Analyst. Otherwise, use Auditor.
-        if "section" in lower_input or "statute" in lower_input or "corp-" in lower_input:
-            print(f"[Orchestrator] Routing direct statute query to LegalAnalystAgent")
+        # Routing logic: if looking for specific contact profiles, use ContactAnalystAgent. Otherwise, use RelationshipCoachAgent.
+        if "contact-" in lower_input or "profile" in lower_input or "contact details" in lower_input:
+            print(f"[Orchestrator] Routing direct profile query to ContactAnalystAgent")
             return self.analyst.run(user_input, trace=trace)
         else:
-            print(f"[Orchestrator] Routing scenario/audit query to ComplianceAuditorAgent")
+            print(f"[Orchestrator] Routing networking/coaching query to RelationshipCoachAgent")
             return self.auditor.run(user_input, session_id=session_id, trace=trace)
-

@@ -2,18 +2,19 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from database import setup_database, get_session_memories, clear_session_memories
-from agent import LegalAgent
+from agent import SmartNotebookOrchestrator
 
 # Load environment variables
 load_dotenv()
 
 # We specify static_folder to serve the web UI dashboard from src/static
-app = Flask(__name__, static_folder="static")
+static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "static"))
+app = Flask(__name__, static_folder=static_dir)
 
 # Initialize database and agent globally on startup
-print("Initializing persistent SQLite database & LegalAgent on startup...")
+print("Initializing persistent SQLite database & SmartNotebookOrchestrator on startup...")
 db_conn = setup_database()
-agent = LegalAgent(db_conn)
+agent = SmartNotebookOrchestrator(db_conn)
 
 @app.route("/", methods=["GET"])
 def index():
@@ -80,4 +81,3 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     print(f"Starting server on port {port}...")
     app.run(host="0.0.0.0", port=port)
-
