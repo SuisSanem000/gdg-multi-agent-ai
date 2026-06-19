@@ -186,8 +186,8 @@ To ensure VS Code correctly recognizes the libraries installed during setup and 
 1. **Select VS Code Interpreter:**
    * Open the **Command Palette** by pressing `Ctrl + Shift + P` (or `Cmd + Shift + P` on macOS).
    * Type **`Python: Select Interpreter`** and select it.
-   * Choose the path pointing to the Python 3.11 executable (configured under `C:\Users\sanem\AppData\Local\Programs\Python\Python311\python.exe`).
-2. The workspace [.vscode/settings.json](.vscode/settings.json) has been configured to target this path by default.
+   * Choose the path pointing to the Python executable in your environment.
+2. The workspace [.vscode/settings.json](.vscode/settings.json) can be configured to target your python path if needed.
 
 ### Step 2: Authenticate Local Google Cloud SDK
 Ensure your local environment has active Vertex AI credentials. Open your terminal (PowerShell / Command Prompt) and run:
