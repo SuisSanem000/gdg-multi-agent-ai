@@ -10,6 +10,7 @@ Responsibilities:
 """
 
 import os
+import sys
 from dotenv import load_dotenv
 from database import setup_database, get_session_memories
 from agent import SmartNotebookOrchestrator
@@ -18,6 +19,12 @@ from agent import SmartNotebookOrchestrator
 load_dotenv()
 
 def main():
+    # Force UTF-8 encoding on standard output for Windows command prompts printing emojis
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
     print("==================================================")
     print("GDG Yerevan Workshop - Smart Contact Notebook Demo")
     print("==================================================")

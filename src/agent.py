@@ -3,7 +3,7 @@ File Name: src/agent.py
 Purpose: Multi-Agent & Routing Orchestrator layer.
 Relation to Project: The core cognitive model of the application. It coordinates Google Gemini model configurations, function calling tools, and context engineering prompts.
 Responsibilities:
-  - Initializes the Google Cloud Vertex AI client.
+  - Initializes the Google Cloud Vertex AI client (with auto-fallback to Mock AI if credentials are absent).
   - Implements `ContactAnalystAgent` to query SQLite contact detail values.
   - Implements `RelationshipCoachAgent` with context memory facts (read/write) and sub-agent queries.
   - Implements `SmartNotebookOrchestrator` to route queries based on intent.
@@ -12,6 +12,99 @@ Responsibilities:
 import os
 import vertexai
 from vertexai.generative_models import GenerativeModel, Tool, FunctionDeclaration, Part
+
+# =====================================================================
+# Mock AI Engine (Ensures the app runs locally without GCP credentials)
+# =====================================================================
+
+class MockFunctionCall:
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+
+class MockPart:
+    def __init__(self, text):
+        self.text = text
+
+class MockContent:
+    def __init__(self, text):
+        self.parts = [MockPart(text)] if text else []
+
+class MockCandidate:
+    def __init__(self, function_calls=None, text=None):
+        self.function_calls = function_calls or []
+        self.content = MockContent(text)
+
+class MockResponse:
+    def __init__(self, function_calls=None, text=None):
+        self.candidates = [MockCandidate(function_calls, text)]
+    
+    @property
+    def text(self):
+        if self.candidates and self.candidates[0].content.parts:
+            return self.candidates[0].content.parts[0].text
+        return ""
+
+class MockChat:
+    def __init__(self, agent_type, db_conn, session_id):
+        self.agent_type = agent_type
+        self.db = db_conn
+        self.session_id = session_id
+        self.turn = 0
+        self.query_topic = "default"
+
+    def send_message(self, message):
+        is_function_response = not isinstance(message, str)
+        self.turn += 1
+        
+        if self.agent_type == "analyst":
+            if self.turn == 1:
+                msg_lower = str(message).lower()
+                contact_id = "contact-john"
+                if "jane" in msg_lower:
+                    contact_id = "contact-jane"
+                return MockResponse(function_calls=[MockFunctionCall("get_contact_details", {"contact_id": contact_id})])
+            else:
+                msg_str = str(message)
+                if "jane" in msg_str.lower() or "contact-jane" in msg_str.lower():
+                    return MockResponse(text="Jane Smith is the Managing Partner at Yerevan Ventures. Email: jane@yerevan.vc. Met at GDG Yerevan. Looking to fund AI startups.")
+                return MockResponse(text="John Doe is the VP of Marketing at TechCorp. Email: john@techcorp.com. Met at GDG Yerevan AI Workshop. Interested in multi-agent systems.")
+                
+        elif self.agent_type == "coach":
+            if not is_function_response:
+                msg_lower = message.lower()
+                if "remember" in msg_lower or "recall" in msg_lower:
+                    self.query_topic = "recall"
+                    return MockResponse(function_calls=[MockFunctionCall("recall_fact", {"key": "contact_name"})])
+                else:
+                    self.query_topic = "draft"
+                    return MockResponse(function_calls=[MockFunctionCall("query_contact_analyst", {"query": "What are the details of contact-john?"})])
+            else:
+                if self.query_topic == "recall":
+                    if self.turn == 2:
+                        return MockResponse(function_calls=[MockFunctionCall("recall_fact", {"key": "company_name"})])
+                    else:
+                        return MockResponse(text="Based on our SQLite session memory, the contact we previously conversed about is John Doe who works at TechCorp.")
+                else:
+                    if self.turn == 2:
+                        return MockResponse(function_calls=[MockFunctionCall("store_fact", {"key": "contact_name", "value": "John Doe"})])
+                    elif self.turn == 3:
+                        return MockResponse(function_calls=[MockFunctionCall("store_fact", {"key": "company_name", "value": "TechCorp"})])
+                    else:
+                        return MockResponse(text="Here is your follow-up email template:\n\nSubject: Following up from GDG Yerevan AI Workshop\n\nHi John,\n\nIt was great meeting you at the GDG Yerevan AI Workshop. I'd love to schedule a quick call to discuss how we can integrate multi-agent AI systems into TechCorp's marketing workflows.\n\nBest regards,\nDavid")
+
+class MockGenerativeModel:
+    def __init__(self, agent_type, db_conn):
+        self.agent_type = agent_type
+        self.db = db_conn
+        
+    def start_chat(self):
+        return MockChat(self.agent_type, self.db, "default")
+
+
+# =====================================================================
+# Main Agent Classes
+# =====================================================================
 
 def _extract_function_call(response):
     """Safely extracts function call from Vertex AI response candidates."""
@@ -31,8 +124,9 @@ def _extract_function_call(response):
 
 
 class ContactAnalystAgent:
-    def __init__(self, db_conn):
+    def __init__(self, db_conn, use_mock: bool = False):
         self.db = db_conn
+        self.use_mock = use_mock
         
         # Define the Function Tool declaration
         self.get_contact_declaration = FunctionDeclaration(
@@ -51,15 +145,18 @@ class ContactAnalystAgent:
         )
         self.db_tool = Tool(function_declarations=[self.get_contact_declaration])
         
-        self.model = GenerativeModel(
-            model_name="gemini-1.5-flash",
-            tools=[self.db_tool],
-            system_instruction=(
-                "You are a Contact Analyst Agent. Your job is to answer questions about contacts using "
-                "the 'get_contact_details' tool. Always use this tool to retrieve exact contact data. "
-                "Be precise and cite the contact details retrieved."
+        if self.use_mock:
+            self.model = MockGenerativeModel("analyst", db_conn)
+        else:
+            self.model = GenerativeModel(
+                model_name="gemini-1.5-flash",
+                tools=[self.db_tool],
+                system_instruction=(
+                    "You are a Contact Analyst Agent. Your job is to answer questions about contacts using "
+                    "the 'get_contact_details' tool. Always use this tool to retrieve exact contact data. "
+                    "Be precise and cite the contact details retrieved."
+                )
             )
-        )
 
     def _execute_db_query(self, contact_id: str) -> str:
         """Executes a local SQL search based on tool parameters requested by Gemini."""
@@ -124,9 +221,10 @@ class ContactAnalystAgent:
 
 
 class RelationshipCoachAgent:
-    def __init__(self, db_conn, analyst_agent):
+    def __init__(self, db_conn, analyst_agent, use_mock: bool = False):
         self.db = db_conn
         self.analyst = analyst_agent
+        self.use_mock = use_mock
         
         # Tools definitions
         self.query_analyst_declaration = FunctionDeclaration(
@@ -185,6 +283,9 @@ class RelationshipCoachAgent:
         ])
         
     def _get_model(self, session_id: str) -> GenerativeModel:
+        if self.use_mock:
+            return MockGenerativeModel("coach", self.db)
+            
         # Fetch current SQLite memories for context injection (Context Engineering)
         from database import get_session_memories
         memories = get_session_memories(self.db, session_id)
@@ -291,11 +392,21 @@ class SmartNotebookOrchestrator:
         # Initialize Vertex AI
         project = os.getenv("GCP_PROJECT_ID", "your-gcp-project-id")
         location = os.getenv("GCP_LOCATION", "us-central1")
-        vertexai.init(project=project, location=location)
+        
+        # Check if we should use Mock AI (auto-fallback if credentials are not configured)
+        self.use_mock = os.getenv("MOCK_AI", "false").lower() == "true"
+        
+        if not self.use_mock:
+            try:
+                vertexai.init(project=project, location=location)
+                print("[Orchestrator] Vertex AI SDK initialized successfully.")
+            except Exception as e:
+                print(f"[Orchestrator] Failed to initialize Vertex AI SDK: {e}. Falling back to MOCK AI mode.")
+                self.use_mock = True
 
-        # Instantiate sub-agents
-        self.analyst = ContactAnalystAgent(db_conn)
-        self.auditor = RelationshipCoachAgent(db_conn, self.analyst)
+        # Instantiate sub-agents passing the mock configuration
+        self.analyst = ContactAnalystAgent(db_conn, self.use_mock)
+        self.auditor = RelationshipCoachAgent(db_conn, self.analyst, self.use_mock)
 
     def run(self, user_input: str, session_id: str = "default", trace: list = None) -> str:
         if trace is None:
