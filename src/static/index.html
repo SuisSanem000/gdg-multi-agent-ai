@@ -3,7 +3,7 @@ File Name: src/static/index.html
 Purpose: Dashboard Layout UI Template.
 Relation to Project: Frontend display container rendered in the browser for the Smart Contact Notebook app.
 Responsibilities:
-  - Establishes layout panels (Checklist, Chat, Thought logs, SQLite memories).
+  - Establishes layout panels (Checklist, Chat, Thought logs, ChromaDB memories).
   - Integrates premium Outfit and Inter fonts.
   - Resolves stylesheets and compiled javascript files relative to the `/static` folder.
 -->
@@ -42,7 +42,7 @@ Responsibilities:
                     <label for="session-id"><i class="fa-solid fa-fingerprint"></i> Session ID:</label>
                     <input type="text" id="session-id" value="gdg-yerevan-demo" placeholder="e.g. session-1">
                 </div>
-                <button id="clear-memory-btn" class="btn btn-secondary" title="Clear SQLite memory for this session">
+                <button id="clear-memory-btn" class="btn btn-secondary" title="Clear ChromaDB memory for this session">
                     <i class="fa-solid fa-trash-can"></i> Clear Memory
                 </button>
             </div>
@@ -83,7 +83,7 @@ Responsibilities:
                             <input type="checkbox" id="check-memory" checked disabled>
                             <label for="check-memory">
                                 <strong>Memory & Context (Vadim)</strong>
-                                <span class="desc">SQLite key-value persistence & context-injected engineering</span>
+                                <span class="desc">ChromaDB key-value persistence & context-injected engineering</span>
                             </label>
                         </div>
                     </div>
@@ -108,11 +108,11 @@ Responsibilities:
                                 </div>
                                 <div class="subsystem-node db">
                                     <i class="fa-solid fa-database"></i>
-                                    <span>SQLite<br><small>(Session Memory)</small></span>
+                                    <span>ChromaDB<br><small>(Session Memory)</small></span>
                                 </div>
                             </div>
                         </div>
-                        <p class="arch-info">When you ask a question, the Flask backend coordinates the Relationship Coach agent. The Coach pulls current memories from SQLite and dynamically communicates with the Contact Analyst agent and SQLite db using tools.</p>
+                        <p class="arch-info">When you ask a question, the Flask backend coordinates the Relationship Coach agent. The Coach pulls current memories from ChromaDB and dynamically communicates with the Contact Analyst agent and ChromaDB db using tools.</p>
                     </div>
                 </div>
             </section>
@@ -164,14 +164,14 @@ Responsibilities:
                     </div>
                 </div>
 
-                <!-- BOTTOM PANEL: SQLite PERSISTED FACT INSPECTOR -->
+                <!-- BOTTOM PANEL: ChromaDB PERSISTED FACT INSPECTOR -->
                 <div class="card panel-db-memory">
                     <div class="card-header">
-                        <h2><i class="fa-solid fa-database"></i> SQLite Session Memory</h2>
+                        <h2><i class="fa-solid fa-database"></i> ChromaDB Session Memory</h2>
                     </div>
                     <div class="card-body scrollable db-variables" id="db-variables">
                         <div class="empty-state-db">
-                            <p>No variables saved in SQLite yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
+                            <p>No variables saved in ChromaDB yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
                         </div>
                     </div>
                 </div>
@@ -182,7 +182,7 @@ Responsibilities:
         
         <!-- FOOTER INFO -->
         <footer class="app-footer">
-            <p>GDG Yerevan AI Multi-Agent Workshop prep application | Built with Vertex AI, Flask & SQLite</p>
+            <p>GDG Yerevan AI Multi-Agent Workshop prep application | Built with Vertex AI, Flask & ChromaDB</p>
         </footer>
     </div>
 

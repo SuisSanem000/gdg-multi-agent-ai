@@ -12,8 +12,8 @@ Instead of a generic template, this project implements a **Smart Contact Noteboo
 
 ### What is this App?
 This app is an interactive **Personal CRM & relationship coach playground**. It combines a Flask backend and a modern glassmorphic web dashboard with Google Gemini 1.5 models to demonstrate:
-1. **Multi-Agent Orchestration:** The app routes queries dynamically between a **Contact Analyst Agent** (who reads records from SQLite) and a **Relationship Coach Agent** (who offers follow-up email drafts and strategic relationship advice).
-2. **Context Engineering & Session Memory:** The coach agent remembers details about you and the session (like your name or topic discussed) across chat turns by storing them in a local SQLite database and dynamically injecting them into Gemini's system instructions. This keeps the LLM context usage low and context recall high.
+1. **Multi-Agent Orchestration:** The app routes queries dynamically between a **Contact Analyst Agent** (who reads records from ChromaDB) and a **Relationship Coach Agent** (who offers follow-up email drafts and strategic relationship advice).
+2. **Context Engineering & Session Memory:** The coach agent remembers details about you and the session (like your name or topic discussed) across chat turns by storing them in a local ChromaDB database and dynamically injecting them into Gemini's system instructions. This keeps the LLM context usage low and context recall high.
 
 ### How to Use and Check It?
 You can interact with the app in two ways:
@@ -30,9 +30,9 @@ You can interact with the app in two ways:
 3. **Open the App:** Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080) in your browser.
 3. **Chat and Check:** 
    * Click **"Draft Email to John"** to send a sample query.
-   * Look at the **Live Agent Thought Stream** on the right. You will see the agents route the message, fetch John's profile from the database, draft the email, and store context (like John's company `TechCorp` and role) to SQLite.
-   * Look at the **SQLite Session Memory** panel on the bottom right. You'll see variables like `contact_name` and `company_name` appear in real-time.
-   * Click **"Recall Contact Details"** (or ask "Who did we just draft an email for?") to verify the agent successfully retrieves those stored context memories from SQLite.
+   * Look at the **Live Agent Thought Stream** on the right. You will see the agents route the message, fetch John's profile from the database, draft the email, and store context (like John's company `TechCorp` and role) to ChromaDB.
+   * Look at the **ChromaDB Session Memory** panel on the bottom right. You'll see variables like `contact_name` and `company_name` appear in real-time.
+   * Click **"Recall Contact Details"** (or ask "Who did we just draft an email for?") to verify the agent successfully retrieves those stored context memories from ChromaDB.
 
 #### 2. Via the Command Line Interface (CLI)
 Run the tester runner to execute simulated interactions directly in your terminal:
@@ -50,7 +50,7 @@ This runs a multi-agent coaching loop, queries contact-jane, updates memory vari
 4. [🔍 Detailed Breakdown of Technologies & Libraries](#-detailed-breakdown-of-technologies--libraries)
    - [The Web Server & Routing](#1-the-web-server--routing-flask--gunicorn)
    - [The AI "Brain"](#2-the-ai-brain-google-cloud-vertex-ai)
-   - [The Database & Memory](#3-the-database--memory-sqlite)
+   - [The Database & Memory](#3-the-database--memory-chromadb)
    - [Deployment & Infrastructure](#4-deployment--infrastructure-docker--dotenv)
 5. [📂 Codebase Directory & Folder Structure](#-codebase-directory--folder-structure)
 6. [🏛️ Core Architecture & Concept Walkthrough](#-core-architecture--concept-walkthrough)
@@ -104,9 +104,20 @@ Your local machine is fully configured and verified for the workshop:
 * **Function Calling (Tools):** The app uses this library to give the AI superpowers. Using `FunctionDeclaration`, the code describes normal Python functions (like searching a database) to the AI. The AI can then intelligently decide to "call" these tools when a user asks a specific question.
 * **Multi-Agent Collaboration:** Instead of one massive AI doing everything, the app routes tasks between multiple specialized agents (defined in [src/agent.py](src/agent.py)). For example, the `RelationshipCoachAgent` talks to the user but does not have database access. Instead, it delegates contact lookups to a secondary `ContactAnalystAgent`.
 
-### 3. The Database & Memory (SQLite)
-* **`sqlite3`:** This is a database engine built directly into Python's standard library, requiring no extra installation. The project uses it (in [src/database.py](src/database.py)) to run a fast, in-memory mock database.
-* **Context Engineering:** Sending an entire long chat history back and forth to an AI model uses a lot of tokens and costs more money. To optimize this, the app uses SQLite to store specific facts the user mentions (e.g., saving `user_name: David` as a key-value pair). Before sending a new user message to the AI, the backend pulls these facts from SQLite and invisibly injects them into the AI's "System Instructions," giving the AI a persistent memory without the huge token cost.
+### 3. The Database & Memory (ChromaDB)
+* **AI-Native Vector Database (`chromadb`):** The application uses ChromaDB, a popular vector database designed from the ground up for LLM applications and agentic workflows. It replaces our legacy SQLite setup to provide semantic similarity queries.
+* **Ephemeral In-Memory Client:** We initialize ChromaDB using `chromadb.EphemeralClient()`. This runs the database completely in-memory without creating a persistent local database file on the host machine. It starts fresh upon application startup, mimicking an SQLite `:memory:` setup while adding robust vector indexing.
+* **Automated Embedding Generation:** ChromaDB abstracts away the complexity of managing a separate embedding model. When we insert contact documents or run queries:
+  1. ChromaDB uses its default embedding function (the SentenceTransformers `all-MiniLM-L6-v2` model) via a local ONNX runtime.
+  2. It automatically converts plain text documents (and incoming queries) into **384-dimensional vector embeddings**.
+  3. Cosine similarity is calculated locally to find matches, meaning we don't need external API calls (e.g. OpenAI or Google Vertex embeddings) to run similarity searches.
+* **Metadata Filtering for Session Memory:** To support context engineering, user facts are stored in a dedicated `session_memories` collection. We track key-value memories across sessions using ChromaDB's metadata dictionary field:
+  * **Schema:** `ids=[session_id_key]`, `documents=[value]`, `metadatas=[{"session_id": session_id, "key": key, "value": value}]`.
+  * **Reads/Writes:** We retrieve a session's memories using metadata filters (`where={"session_id": session_id}`) and wipe them cleanly using `.delete(where={"session_id": session_id})`.
+* **Semantic Search vs. Exact ID Lookups:**
+  * **O(1) Exact Fetch:** When a query targets a specific profile (e.g., `contact-jane`), the agent uses `contacts_col.get(ids=[contact_id])` for instant key-based lookup.
+  * **Vector Query:** When a query is descriptive (e.g., *"Draft an email to the Yerevan investor"*), the agent invokes `search_contacts_semantically(query="Yerevan investor")`, which executes `contacts_col.query(query_texts=[query], n_results=1)`. ChromaDB finds the closest matching document (Jane Smith's profile, which mentions Yerevan Ventures) and returns it.
+
 
 ### 4. Deployment & Infrastructure (Docker & Dotenv)
 * **Docker ([Dockerfile](Dockerfile)):** The project is containerized using a lightweight Python image (`python:3.11-slim`). This bundles the Python code, the installed libraries, and the server together so it can be deployed seamlessly to **Google Cloud Run** (a serverless hosting environment).
@@ -127,7 +138,7 @@ gdg-multi-agent-ai/
 ├── Dockerfile              # Docker container configuration for Cloud Run
 └── src/
     ├── __init__.py
-    ├── database.py         # SQLite setup: Mock Contacts + Session Memory
+    ├── database.py         # ChromaDB setup: Contacts + Session Memory
     ├── agent.py            # Multi-agent system: Analyst, Coach, and Orchestrator
     ├── main.py             # CLI runner script with trace outputs
     ├── app.py              # Flask app serving static frontend and API endpoints
@@ -144,14 +155,14 @@ gdg-multi-agent-ai/
 The project demonstrates all three key themes of the workshop: Cloud Run deployment, multi-agent orchestration, and context/session memory engineering.
 
 ### 🗄️ Database & Memory Management
-* **Contacts Table:** Persists mock contact profile data (like email, company, and background details).
-* **Session Memories Table:** A key-value table `(session_id, key, value)`. This stores persistent relationship facts (e.g. user names, schedules, preferences) across conversation turns.
-* **Context Injection:** When the coach agent runs, it retrieves all key-value memories for the current `session_id` using [get_session_memories](src/database.py#L56) and injects them directly into the system instructions. This demonstrates **Context Engineering** (Vadim Patsev's session), providing the AI with memory context without passing raw conversation transcripts.
+* **Contacts Collection:** Persists contact profile data (like email, company, and background details) with local vector embeddings supporting semantic search.
+* **Session Memories Collection:** Stores persistent relationship facts (e.g. user names, schedules, preferences) across conversation turns using metadata filtering.
+* **Context Injection:** When the coach agent runs, it retrieves all key-value memories for the current `session_id` using [get_session_memories](src/database.py#L60) and injects them directly into the system instructions. This demonstrates **Context Engineering** (Vadim Patsev's session), providing the AI with memory context without passing raw conversation transcripts.
 
 ### 🤖 Multi-Agent Collaboration Pattern
 We moved from a single agent to a collaborative multi-agent loop inside [src/agent.py](src/agent.py):
-1. **[ContactAnalystAgent](src/agent.py#L21):** Accesses the SQLite database using the `get_contact_details` function tool to retrieve contact information.
-2. **[RelationshipCoachAgent](src/agent.py#L114):** Helps the user manage professional networks. Rather than accessing the database directly, it has a tool-as-an-agent called `query_contact_analyst`. When it decides it needs details on a contact, it calls this tool, which runs `ContactAnalystAgent`. It also reads/writes facts using the `recall_fact` and `store_fact` memory tools.
+1. **[ContactAnalystAgent](src/agent.py#L41):** Accesses the ChromaDB database using the `get_contact_details` and `search_contacts_semantically` tools to retrieve contact information.
+2. **[RelationshipCoachAgent](src/agent.py#L181):** Helps the user manage professional networks. Rather than accessing the database directly, it has a tool-as-an-agent called `query_contact_analyst`. When it decides it needs details on a contact, it calls this tool, which runs `ContactAnalystAgent`. It also reads/writes facts using the `recall_fact` and `store_fact` memory tools.
 
 ### 🔀 Orchestrator Routing
 The **[SmartNotebookOrchestrator](src/agent.py#L274)** acts as the gateway/orchestrator:
@@ -162,8 +173,8 @@ The **[SmartNotebookOrchestrator](src/agent.py#L274)** acts as the gateway/orche
 ### 🖥️ Web Dashboard Features
 We built a single-page developer dashboard served directly by the Flask server:
 * **Interactive Chat Interface:** Submit relationship coaching queries or networking requests.
-* **Live Agent Thought Stream:** Displays step-by-step traces of agent interactions, showing exactly when the Coach calls the Contact Analyst, when SQLite tools execute, and the returned data.
-* **SQLite Session Memory Inspector:** Shows a real-time list of key-value pairs stored in the SQLite database for the active session.
+* **Live Agent Thought Stream:** Displays step-by-step traces of agent interactions, showing exactly when the Coach calls the Contact Analyst, when ChromaDB tools execute, and the returned data.
+* **ChromaDB Session Memory Inspector:** Shows a real-time list of key-value pairs stored in the ChromaDB database for the active session.
 * **Cloud Architecture & Prep Guide:** Visual diagram and checklist for the workshop.
 
 ---
@@ -204,11 +215,11 @@ npm run build
 ```
 
 ### 1. Running the CLI Demo
-Execute the CLI testing run which simulates a relationship coaching scenario, stores facts in SQLite, and retrieves them in a subsequent query:
+Execute the CLI testing run which simulates a relationship coaching scenario, stores facts in ChromaDB, and retrieves them in a subsequent query:
 ```powershell
 python src/main.py
 ```
-*This runner ([src/main.py](src/main.py)) will demonstrate a coaching scenario, save audited variables into SQLite memory, recall those variables, and perform a direct contact profile lookup using orchestrator routing.*
+*This runner ([src/main.py](src/main.py)) will demonstrate a coaching scenario, save audited variables into ChromaDB memory, recall those variables, and perform a direct contact profile lookup using orchestrator routing.*
 
 ### 2. Running the Web Dashboard
 Start the local Flask development web server:
@@ -241,13 +252,13 @@ gcloud run deploy contact-notebook-coach `
 
 ## 🧪 Verified CLI Execution Case Study
 
-This section records the exact terminal trace logs from a successful local test execution run using the auto-fallback Mock AI engine (guaranteeing correct multi-agent routing, SQLite tool execution, and context fact saving):
+This section records the exact terminal trace logs from a successful local test execution run using the native Vertex AI Gemini model (guaranteeing correct multi-agent routing, ChromaDB tool execution, and context fact saving):
 
 ```text
 ==================================================
 GDG Yerevan Workshop - Smart Contact Notebook Demo
 ==================================================
-Setting up local SQLite database with Contacts...
+Setting up local ChromaDB vector database with Contacts...
 Initializing Multi-Agent System (SmartNotebookOrchestrator)...
 
 >>> Running Query 1: Draft a short follow-up email for a new contact named John Doe who works at TechCorp.
@@ -278,7 +289,7 @@ Best regards,
 David
 
 --------------------------------------------------
-SQLite Saved Memories for session 'cli-test-session':
+ChromaDB Saved Memories for session 'cli-test-session':
   - company_name: TechCorp
   - contact_name: John Doe
 --------------------------------------------------
@@ -326,18 +337,18 @@ This section records the step-by-step CRM dashboard walkthrough verified end-to-
   * The **Live Agent Thought Stream** logs details in real time:
     1. `RelationshipCoachAgent` starts processing the prompt.
     2. It calls the `query_contact_analyst` tool, delegating background queries to `ContactAnalystAgent`.
-    3. `ContactAnalystAgent` runs local SQL lookup tool `get_contact_details` querying SQLite database for John's role and email details.
+    3. `ContactAnalystAgent` runs local lookup tool `get_contact_details` querying ChromaDB database for John's role and email details.
     4. The Coach logs output, formats the email template, and runs `store_fact` to persist relationship context variables (`last_contact_query` = `"John Doe (TechGen)"`).
 
 * **Step 4: Session Memory Update**
-  * The generated email template renders in the chat layout. Simultaneously, the **SQLite Session Memory** panel highlights in blue as it registers the newly persisted context fact variables inside SQLite database.
+  * The generated email template renders in the chat layout. Simultaneously, the **ChromaDB Session Memory** panel highlights in blue as it registers the newly persisted context fact variables inside ChromaDB database.
   * *Artifact References:* [Step 4 Screenshot](step_4_email_drafted_1781877644899.png)
 
 * **Step 5: Memory Recall Evaluation**
-  * The user clicks **"Recall Contact Details"**. The Coach queries the SQLite memory key-value properties and successfully retrieves John's details without querying the analyst or referencing chat transcripts, showcasing **Context Engineering**.
+  * The user clicks **"Recall Contact Details"**. The Coach queries the ChromaDB memory key-value properties and successfully retrieves John's details without querying the analyst or referencing chat transcripts, showcasing **Context Engineering**.
 
 * **Step 6: Walkthrough Completed**
-  * The dashboard updates the checklist, verifying successful database writes, model fallback routing, and frontend rendering metrics.
+  * The dashboard updates the checklist, verifying successful database writes, multi-agent routing, and frontend rendering metrics.
   * *Artifact References:* [Step 6 Screenshot](step_6_demo_completed_1781877697984.png) | [Walkthrough WebP Recording](crm_step_walkthrough_1781869992831.webp)
 
 ---

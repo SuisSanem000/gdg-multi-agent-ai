@@ -5,7 +5,7 @@ Relation to Project: The application host/backend wrapper coordinating client we
 Responsibilities:
   - Hosts the Flask application server and configures absolute static folder pathing.
   - Serves index.html to client requests.
-  - Exposes API routes (`/query`, `/memory`, `/clear`) to query agents and interact with SQLite session variables.
+  - Exposes API routes (`/query`, `/memory`, `/clear`) to query agents and interact with ChromaDB session variables.
 """
 
 import os
@@ -22,7 +22,7 @@ static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "static"))
 app = Flask(__name__, static_folder=static_dir)
 
 # Initialize database and agent globally on startup
-print("Initializing persistent SQLite database & SmartNotebookOrchestrator on startup...")
+print("Initializing in-memory ChromaDB database & SmartNotebookOrchestrator on startup...")
 db_conn = setup_database()
 agent = SmartNotebookOrchestrator(db_conn)
 
@@ -46,7 +46,7 @@ def handle_query():
         # Run agent with session_id and trace array
         response_text = agent.run(user_input, session_id=session_id, trace=trace_logs)
         
-        # Fetch current SQLite session memories to return to frontend
+        # Fetch current ChromaDB session memories to return to frontend
         memories = get_session_memories(db_conn, session_id)
         
         return jsonify({
@@ -74,7 +74,7 @@ def handle_get_memory():
 
 @app.route("/clear", methods=["POST"])
 def handle_clear_memory():
-    """Clears all SQLite session memories for a specific session."""
+    """Clears all ChromaDB session memories for a specific session."""
     data = request.get_json() or {}
     session_id = data.get("session_id", "default").strip()
     try:

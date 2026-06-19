@@ -1,12 +1,12 @@
 """
 File Name: src/main.py
 Purpose: CLI Runner and Developer Testing Script.
-Relation to Project: Standalone developer test script verifying the multi-agent orchestration, tool usage, routing, and SQLite session memory loops in the console terminal.
+Relation to Project: Standalone developer test script verifying the multi-agent orchestration, tool usage, routing, and ChromaDB session memory loops in the console terminal.
 Responsibilities:
   - Reads local environment credentials.
-  - Launches mock database and orchestrator instances.
+  - Launches ChromaDB database and orchestrator instances.
   - Executes sequential test queries simulating profile retrieval and email drafting tasks.
-  - Prints the formatted agent thought traces to verify correct operation.
+  - Prints the formatted agent thought traces to verify correct operation and ChromaDB memory loops.
 """
 
 import os
@@ -37,7 +37,7 @@ def main():
         print("Continuing initialization (will fail at Vertex AI calls if credentials are missing)...")
         print("--------------------------------------------------")
 
-    print("Setting up local SQLite database with Contacts...")
+    print("Setting up local ChromaDB vector database with Contacts...")
     db_conn = setup_database()
     
     print("Initializing Multi-Agent System (SmartNotebookOrchestrator)...")
@@ -45,7 +45,7 @@ def main():
         agent = SmartNotebookOrchestrator(db_conn)
         session_id = "cli-test-session"
         
-        # Test Query 1: Relationship Coaching & SQLite Memory Writing
+        # Test Query 1: Relationship Coaching & ChromaDB Memory Writing
         query_1 = "Draft a short follow-up email for a new contact named John Doe who works at TechCorp."
         print(f"\n>>> Running Query 1: {query_1}")
         
@@ -68,15 +68,15 @@ def main():
         
         print("\n--------------------------------------------------")
         
-        # Inspect SQLite memories directly to prove it was saved in SQLite
+        # Inspect ChromaDB memories directly to prove it was saved in ChromaDB
         mems = get_session_memories(db_conn, session_id)
-        print(f"SQLite Saved Memories for session '{session_id}':")
+        print(f"ChromaDB Saved Memories for session '{session_id}':")
         for k, v in mems.items():
             print(f"  - {k}: {v}")
             
         print("--------------------------------------------------")
         
-        # Test Query 2: Retrieve fact from SQLite Memory
+        # Test Query 2: Retrieve fact from ChromaDB Memory
         query_2 = "What was the name of the contact we just drafted an email for, and what company do they work at?"
         print(f"\n>>> Running Query 2: {query_2}")
         

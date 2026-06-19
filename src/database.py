@@ -1,77 +1,78 @@
 """
 File Name: src/database.py
-Purpose: Database setup and session memory operations.
-Relation to Project: The core data persistence layer for seeded contacts and relationship facts. It stores mock contacts and remembers relationship preferences across conversational turns.
+Purpose: Database setup and session memory operations using ChromaDB.
+Relation to Project: The core vector database persistence layer for seeded contacts and relationship facts.
 Responsibilities:
-  - Seeds the SQLite `contacts` table with mock contact details.
-  - Creates the `session_memories` key-value table.
-  - Saves, retrieves, and clears session memory variables for context engineering.
+  - Seeds the ChromaDB `contacts` collection with initial contact records.
+  - Implements session memory operations using metadata filtering.
 """
 
-import sqlite3
+import chromadb
 
 def setup_database():
-    """Initializes an in-memory SQLite database and seeds it with mock contacts."""
-    # We use an in-memory database for local test runs
-    conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
+    """Initializes an in-memory ephemeral ChromaDB client and seeds default contacts."""
+    # EphemeralClient runs entirely in-memory (resets on application restart, no disk writes needed)
+    client = chromadb.EphemeralClient()
     
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS contacts (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            details TEXT
-        )
-    ''')
+    # Setup contacts collection
+    contacts_col = client.get_or_create_collection(name="contacts")
     
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS session_memories (
-            session_id TEXT,
-            key TEXT,
-            value TEXT,
-            PRIMARY KEY (session_id, key)
-        )
-    ''')
-    
-    # Seeding mock contacts for the Smart Contact Notebook
+    # Seeding contacts dataset
     contacts_data = [
-        (
-            'contact-john',
-            'John Doe',
-            'Role: VP of Marketing at TechCorp. Email: john@techcorp.com. Background: Met at GDG Yerevan AI Workshop. Interested in integrating multi-agent AI systems into marketing workflows.'
-        ),
-        (
-            'contact-jane',
-            'Jane Smith',
-            'Role: Managing Partner at Yerevan Ventures. Email: jane@yerevan.vc. Background: Looking to fund pre-seed AI startups in Armenia. Prefers communication via Telegram.'
-        )
+        {
+            "id": "contact-john",
+            "document": "Role: VP of Marketing at TechCorp. Email: john@techcorp.com. Background: Met at GDG Yerevan AI Workshop. Interested in integrating multi-agent AI systems into marketing workflows.",
+            "metadata": {"name": "John Doe"}
+        },
+        {
+            "id": "contact-jane",
+            "document": "Role: Managing Partner at Yerevan Ventures. Email: jane@yerevan.vc. Background: Looking to fund pre-seed AI startups in Armenia. Prefers communication via Telegram.",
+            "metadata": {"name": "Jane Smith"}
+        }
     ]
     
-    cursor.executemany(
-        'INSERT OR REPLACE INTO contacts (id, name, details) VALUES (?, ?, ?)',
-        contacts_data
+    contacts_col.add(
+        ids=[c["id"] for c in contacts_data],
+        documents=[c["document"] for c in contacts_data],
+        metadatas=[c["metadata"] for c in contacts_data]
     )
-    conn.commit()
-    return conn
+    
+    # Ensure memories collection is initialized
+    client.get_or_create_collection(name="session_memories")
+    
+    return client
 
-def save_session_memory(conn, session_id: str, key: str, value: str):
-    """Saves or updates a fact in SQLite session memories."""
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT OR REPLACE INTO session_memories (session_id, key, value)
-        VALUES (?, ?, ?)
-    ''', (session_id, key.strip().lower(), value.strip()))
-    conn.commit()
+def save_session_memory(client, session_id: str, key: str, value: str):
+    """Saves or updates a fact in ChromaDB session memories."""
+    memories_col = client.get_or_create_collection(name="session_memories")
+    mem_id = f"{session_id}_{key.strip().lower()}"
+    
+    memories_col.upsert(
+        ids=[mem_id],
+        documents=[value.strip()],
+        metadatas=[{
+            "session_id": session_id,
+            "key": key.strip().lower(),
+            "value": value.strip()
+        }]
+    )
 
-def get_session_memories(conn, session_id: str) -> dict:
+def get_session_memories(client, session_id: str) -> dict:
     """Retrieves all memory facts stored for a session as a key-value dictionary."""
-    cursor = conn.cursor()
-    cursor.execute('SELECT key, value FROM session_memories WHERE session_id = ?', (session_id,))
-    rows = cursor.fetchall()
-    return {row[0]: row[1] for row in rows}
+    memories_col = client.get_or_create_collection(name="session_memories")
+    
+    # Filter memories by session_id metadata field
+    results = memories_col.get(where={"session_id": session_id})
+    memories = {}
+    
+    if results and 'metadatas' in results and results['metadatas']:
+        for meta in results['metadatas']:
+            if meta:
+                memories[meta['key']] = meta['value']
+                
+    return memories
 
-def clear_session_memories(conn, session_id: str):
+def clear_session_memories(client, session_id: str):
     """Deletes all memory facts for a session."""
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM session_memories WHERE session_id = ?', (session_id,))
-    conn.commit()
+    memories_col = client.get_or_create_collection(name="session_memories")
+    memories_col.delete(where={"session_id": session_id})

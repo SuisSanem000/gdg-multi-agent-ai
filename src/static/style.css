@@ -5,7 +5,7 @@ Relation to Project: Frontend styling layer implementing the minimal Solarized L
 Responsibilities:
   - Defines the global Solarized Light CSS custom variables and tokens.
   - Implements the grid system separating the Checklist, Chat, and Logs panels.
-  - Styles specific visual elements (chat bubbles, trace outputs, SQLite grids, and markdown tags).
+  - Styles specific visual elements (chat bubbles, trace outputs, ChromaDB grids, and markdown tags).
 */
 
 /* Global Theme & Tokens - Solarized Light (Minimal & Clean) */

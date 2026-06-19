@@ -3,13 +3,13 @@
  * Purpose: Interactive frontend driver for the Smart Contact Notebook.
  * Relation to Project: Acts as the client-side controller. It handles user inputs from the web UI,
  *   sends asynchronous API query requests to the Flask backend, renders the real-time agent execution 
- *   thought traces, and dynamically populates the SQLite session memory panel.
+ *   thought traces, and dynamically populates the ChromaDB session memory panel.
  * Responsibilities:
  *   - Captures user chat interactions and handles textarea resizing.
  *   - Dispatches AJAX POST requests to `/query` with the active session ID.
  *   - Parses and formats markdown response strings from the agent.
  *   - Dynamically updates the "Live Agent Thought Stream" log tracing routing and tool calls.
- *   - Automatically synchronizes and inspects SQLite database key-value memories.
+ *   - Automatically synchronizes and inspects ChromaDB vector key-value memories.
  */
 
 // Define structures for TypeScript types
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<p>${html}</p>`;
     };
 
-    // Load and render SQLite persistent session memories on page load or session ID switch
+    // Load and render ChromaDB persistent session memories on page load or session ID switch
     const loadSessionMemory = async (): Promise<void> => {
         if (!sessionIdInput || !dbVariables) return;
         const sessionId: string = sessionIdInput.value.trim() || 'default';
@@ -107,13 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Renders the SQLite memory key-value properties into the CRM database inspector panel
+    // Renders the ChromaDB memory key-value properties into the CRM database inspector panel
     const renderMemory = (memory: Record<string, string>): void => {
         if (!dbVariables) return;
         if (!memory || Object.keys(memory).length === 0) {
             dbVariables.innerHTML = `
                 <div class="empty-state-db">
-                    <p>No variables saved in SQLite yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
+                    <p>No variables saved in ChromaDB yet. As you converse, the coach agent will call <code>store_fact()</code> to remember things.</p>
                 </div>
             `;
             return;
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thoughtLogs.innerHTML = `
             <div class="empty-state">
                 <i class="fa-solid fa-spinner" style="animation: rotate 1s linear infinite;"></i>
-                <p>Executing agents in Vertex AI and scanning SQLite schema...</p>
+                <p>Executing agents in Vertex AI and scanning ChromaDB collections...</p>
             </div>
         `;
 
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 agentDiv.innerHTML = formatResponseText(data.response);
                 chatMessages.appendChild(agentDiv);
                 
-                // 4. Update logs traces and SQLite memories
+                // 4. Update logs traces and ChromaDB memories
                 renderTraceLogs(data.trace);
                 renderMemory(data.memory);
             } else {
@@ -327,11 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Handles wiping SQLite database persistent facts for the current session
+    // Handles wiping ChromaDB database persistent facts for the current session
     if (clearMemoryBtn && sessionIdInput && chatMessages) {
         clearMemoryBtn.addEventListener('click', async () => {
             const sessionId: string = sessionIdInput.value.trim() || 'default';
-            if (confirm(`Are you sure you want to clear the SQLite session memory for: "${sessionId}"?`)) {
+            if (confirm(`Are you sure you want to clear the ChromaDB session memory for: "${sessionId}"?`)) {
                 try {
                     const response: Response = await fetch('/clear', {
                         method: 'POST',
