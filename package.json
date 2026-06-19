@@ -1,0 +1,12 @@
+{
+  "name": "gdg-multi-agent-ai",
+  "version": "1.0.0",
+  "description": "GDG Yerevan AI Multi-Agent & Session Memory Playground",
+  "scripts": {
+    "build": "npx -y -p typescript tsc src/static/app.ts --target es2017 --outDir src/static --allowJs --strict --esModuleInterop",
+    "dev": "npx -y -p typescript tsc src/static/app.ts --target es2017 --outDir src/static --allowJs --strict --esModuleInterop --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,3 +1,14 @@
+"""
+File Name: src/main.py
+Purpose: CLI Runner and Developer Testing Script.
+Relation to Project: Standalone developer test script verifying the multi-agent orchestration, tool usage, routing, and SQLite session memory loops in the console terminal.
+Responsibilities:
+  - Reads local environment credentials.
+  - Launches mock database and orchestrator instances.
+  - Executes sequential test queries simulating profile retrieval and email drafting tasks.
+  - Prints the formatted agent thought traces to verify correct operation.
+"""
+
 import os
 from dotenv import load_dotenv
 from database import setup_database, get_session_memories

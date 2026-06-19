@@ -36,7 +36,7 @@ The project has been expanded into a fully functional web dashboard with the fol
    * Serves static dashboard resources and handles API queries (`POST /query`, `GET /memory`, `POST /clear`).
    * Configured with absolute paths for the `static` folder to prevent path resolution 404 errors.
 4. **Developer Dashboard ([src/static/index.html](src/static/index.html) & [src/static/app.js](src/static/app.js)):**
-   * Implements a premium glassmorphic dark-mode UI.
+   * Implements a clean, minimal Solarized Light UI.
    * Features a chat playground, live agent thought logs parser, and real-time SQLite database variable inspector.
 5. **CLI Runner ([src/main.py](src/main.py)):**
    * Simplifies CLI testing by querying the coach, saving relationship facts to memory, retrieving them, and searching direct contact records.

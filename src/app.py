@@ -1,3 +1,13 @@
+"""
+File Name: src/app.py
+Purpose: Flask REST API & Web Server.
+Relation to Project: The application host/backend wrapper coordinating client web dashboard requests with the backend multi-agent architecture.
+Responsibilities:
+  - Hosts the Flask application server and configures absolute static folder pathing.
+  - Serves index.html to client requests.
+  - Exposes API routes (`/query`, `/memory`, `/clear`) to query agents and interact with SQLite session variables.
+"""
+
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv

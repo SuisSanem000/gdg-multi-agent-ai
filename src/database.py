@@ -1,3 +1,13 @@
+"""
+File Name: src/database.py
+Purpose: Database setup and session memory operations.
+Relation to Project: The core data persistence layer for seeded contacts and relationship facts. It stores mock contacts and remembers relationship preferences across conversational turns.
+Responsibilities:
+  - Seeds the SQLite `contacts` table with mock contact details.
+  - Creates the `session_memories` key-value table.
+  - Saves, retrieves, and clears session memory variables for context engineering.
+"""
+
 import sqlite3
 
 def setup_database():

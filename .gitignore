@@ -133,3 +133,6 @@ dmypy.json
 *.njsproj
 *.sln
 *.sw?
+
+# Compiled TypeScript
+/src/static/app.js

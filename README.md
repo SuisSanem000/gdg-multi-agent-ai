@@ -19,11 +19,15 @@ This app is an interactive **Personal CRM & relationship coach playground**. It 
 You can interact with the app in two ways:
 
 #### 1. Via the Web Dashboard (Recommended)
-1. **Start the Flask server:**
+1. **Compile the Dashboard TypeScript Code:**
+   ```powershell
+   npm run build
+   ```
+2. **Start the Flask server:**
    ```powershell
    python src/app.py
    ```
-2. **Open the App:** Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080) in your browser.
+3. **Open the App:** Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080) in your browser.
 3. **Chat and Check:** 
    * Click **"Draft Email to John"** to send a sample query.
    * Look at the **Live Agent Thought Stream** on the right. You will see the agents route the message, fetch John's profile from the database, draft the email, and store context (like John's company `TechCorp` and role) to SQLite.
@@ -115,6 +119,7 @@ The project has been expanded into a complete web app with a visual, responsive 
 gdg-multi-agent-ai/
 ├── README.md               # Unified roadmap, explanations & setup guide (this file)
 ├── requirements.txt        # Package dependencies (Vertex AI, Flask, dotenv, Gunicorn)
+├── package.json            # Node compilation scripts for TypeScript dashboard source
 ├── .env.example            # Environment variables template
 ├── .env                    # Local environment config (GCP credentials)
 ├── Dockerfile              # Docker container configuration for Cloud Run
@@ -126,8 +131,8 @@ gdg-multi-agent-ai/
     ├── app.py              # Flask app serving static frontend and API endpoints
     └── static/
         ├── index.html      # Premium developer dashboard HTML
-        ├── style.css       # Custom glassmorphism dark-mode stylesheet
-        └── app.js          # Interactive UI driver (fetch APIs and logs parser)
+        ├── style.css       # Clean Solarized Light minimal stylesheet
+        └── app.ts          # Typed TypeScript dashboard driver (compiles to ignored app.js)
 ```
 
 ---
@@ -189,6 +194,12 @@ GCP_LOCATION=us-central1
 ---
 
 ## ⚡ How to Run the Playground Locally
+
+### 0. Compile the TypeScript Dashboard Code
+Since browsers execute Javascript natively, compile the TypeScript source file ([src/static/app.ts](src/static/app.ts)) into compiled javascript output (which is ignored by Git):
+```powershell
+npm run build
+```
 
 ### 1. Running the CLI Demo
 Execute the CLI testing run which simulates a relationship coaching scenario, stores facts in SQLite, and retrieves them in a subsequent query:

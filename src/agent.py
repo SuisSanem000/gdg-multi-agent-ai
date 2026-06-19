@@ -1,3 +1,14 @@
+"""
+File Name: src/agent.py
+Purpose: Multi-Agent & Routing Orchestrator layer.
+Relation to Project: The core cognitive model of the application. It coordinates Google Gemini model configurations, function calling tools, and context engineering prompts.
+Responsibilities:
+  - Initializes the Google Cloud Vertex AI client.
+  - Implements `ContactAnalystAgent` to query SQLite contact detail values.
+  - Implements `RelationshipCoachAgent` with context memory facts (read/write) and sub-agent queries.
+  - Implements `SmartNotebookOrchestrator` to route queries based on intent.
+"""
+
 import os
 import vertexai
 from vertexai.generative_models import GenerativeModel, Tool, FunctionDeclaration, Part
