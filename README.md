@@ -213,7 +213,7 @@ This interface lets you interact with the agent, inspect live JSON thought trace
 
 To deploy your agent to Google Cloud Run, run the single command below from the project root:
 ```powershell
-gcloud run deploy legal-analyst-agent `
+gcloud run deploy contact-notebook-coach `
   --source . `
   --region us-central1 `
   --allow-unauthenticated

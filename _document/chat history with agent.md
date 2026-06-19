@@ -1,77 +1,81 @@
 # GDG Yerevan Workshop Preparation: Project Scope & History
 
-This document serves as a persistent record of the project state, scope, architectural decisions, and key dates discussed during the preparation for the workshop.
+This document serves as a persistent record of the project state, scope, architectural decisions, and setup updates for the multi-agent workshop. It serves as context for new agent sessions when running the project in the Antigravity IDE.
 
 ---
 
 ## 📅 Key Dates & Event Context
 * **Workshop Date:** June 20, 2026 (10:30 AM - 05:30 PM)
-* **Location:** Yandex Hall, Yerevan, Armenia
-* **Preparation Period:** June 16, 2026 - June 18, 2026
-* **Core Goal:** Build and deploy a multi-agent system using Google Cloud and Vertex AI.
+* **Location:** Yandex Hall, Moskovyan 35, Yerevan, Armenia
+* **Core Goal:** Build, run, and deploy a multi-agent system on Google Cloud Run, using Vertex AI SDK and SQLite for session memory context engineering.
 
 ---
 
-## 🎯 User Profile & Project Scope
-* **User Profile**: Experienced web backend developer. Proficient with Python syntax, but new to Python-specific web frameworks (e.g. Flask/FastAPI) and Python agent frameworks.
-* **Scope**: Transition the starter project from the default TypeScript/Node.js template into an easy-to-read, standard Python project. Focus on clear, raw Python syntax, keeping external frameworks and libraries minimal to ensure readability, while maintaining a robust design pattern for local database function calling.
+## 🎯 Project Scope & Concept
+Initially focused on a corporate compliance auditing template, the project has been refactored into a **Smart Contact Notebook & Relationship Coach (Personal CRM)**. 
+
+This provides a simpler, more intuitive AI playground while utilizing the exact same high-level libraries and deployment structure:
+* **Web Server:** Flask with Gunicorn.
+* **AI Brain:** `google-cloud-aiplatform` (Gemini 1.5) with function tools.
+* **Memory & Database:** SQLite in-memory database with key-value session memories.
 
 ---
 
 ## 🏛️ Codebase State & Architecture
 
-We set up a structured Python application in `src/` featuring:
-1. **Mock Database (`src/database.py`)**: Utilizes standard library `sqlite3` to set up an in-memory database seeded with Corporations Act statutes (`corp-181`, `corp-182`).
-2. **Legal Agent (`src/agent.py`)**: 
-   - Uses the official Google Cloud Vertex AI Python SDK (`google-cloud-aiplatform`).
-   - Declares the `get_statute_definition` function as a callable tool.
-   - Initialises `gemini-1.5-flash` with the tool configuration.
-   - Employs a stateful `chat` object (`model.start_chat()`) to manage turn history.
-   - Robustly parses tool requests by checking both `candidate.function_calls` and `candidate.content.parts[0].function_call` lists (avoiding version mismatch bugs).
-   - Executes local database searches and feeds results back to Gemini using `Part.from_function_response(...)`.
-3. **CLI Runner (`src/main.py`)**: Exposes a command-line interface to execute sample database queries and generic queries against the agent.
-4. **Flask Web Server (`src/app.py`)**: Exposes the agent via POST `/query` to make it accessible to external services and HTTP request containers.
-5. **Dockerfile**: Containers the application using `python:3.11-slim` and `gunicorn` for deployment to **Google Cloud Run**.
+The project has been expanded into a fully functional web dashboard with the following structure:
+1. **Mock Database ([src/database.py](src/database.py)):**
+   * Uses `sqlite3` to host an in-memory database.
+   * Seeds a `contacts` table with mock professionals ([John Doe](src/database.py#L26) and [Jane Smith](src/database.py#L30)).
+   * Manages a `session_memories` table to persist relationship facts (such as user name or preferences) across conversational turns.
+2. **Multi-Agent Engine ([src/agent.py](src/agent.py)):**
+   * **[ContactAnalystAgent](src/agent.py#L21):** Responsible for looking up detailed contact records using database tools.
+   * **[RelationshipCoachAgent](src/agent.py#L114):** Responsible for relationship advice, drafting follow-up emails, and saving context variables. Uses `query_contact_analyst` as an agent-as-a-tool pattern, delegating data lookups to the Analyst.
+   * **[SmartNotebookOrchestrator](src/agent.py#L274):** Gateway/router routing direct contact lookups to the Analyst, and conversational or coaching requests to the Coach.
+3. **Flask Web Server ([src/app.py](src/app.py)):**
+   * Serves static dashboard resources and handles API queries (`POST /query`, `GET /memory`, `POST /clear`).
+   * Configured with absolute paths for the `static` folder to prevent path resolution 404 errors.
+4. **Developer Dashboard ([src/static/index.html](src/static/index.html) & [src/static/app.js](src/static/app.js)):**
+   * Implements a premium glassmorphic dark-mode UI.
+   * Features a chat playground, live agent thought logs parser, and real-time SQLite database variable inspector.
+5. **CLI Runner ([src/main.py](src/main.py)):**
+   * Simplifies CLI testing by querying the coach, saving relationship facts to memory, retrieving them, and searching direct contact records.
+6. **Unified Roadmap ([README.md](README.md)):**
+   * Unified documentation, setup guides, checklists, and run instructions in a single root file.
+   * Configured entirely with relative links for clean, portable rendering on other machines.
 
 ---
 
-## ⚙️ Environment & Tooling Decisions
+## ⚙️ Global Environment & IDE Setup
 
-### 1. Unified Documentation
-- Merged the workshop agenda, schedules, and TypeScript guidelines into a single, cohesive Python-focused [README.md](file:///d:/projects/gdg-multi-agent-ai/README.md).
-- Deleted the temporary `input information.md` file to prevent clutter.
+### 1. Python Interpreter Alignment
+* **Issue:** Prompting user to select a Python interpreter was recurring.
+* **Fix:** Configured the default interpreter path globally in the Antigravity IDE User settings ([C:\Users\sanem\AppData\Roaming\Antigravity IDE\User\settings.json](file:///C:/Users/sanem/AppData/Roaming/Antigravity%20IDE/User/settings.json)) using `"python.defaultInterpreterPath": "C:\\Users\\sanem\\AppData\\Local\\Programs\\Python\\Python313\\python.exe"`.
+* **Clean Repo:** No interpreter paths or local virtual env variables are stored inside the project workspace settings, ensuring no machine-specific paths are committed or pushed.
 
-### 2. Environment Selection (Global Python vs. Virtual Env)
-- **Decision**: The user explicitly preferred using their local global Python interpreter rather than a virtual environment (`.venv`).
-- **Actions taken**:
-  - Deleted the `.venv` directory.
-  - Installed all project dependencies globally using the local Python 3.11 pip runner:
-    `C:\Users\sanem\AppData\Local\Programs\Python\Python311\python.exe -m pip install -r requirements.txt`
-  - Created [.vscode/settings.json](file:///d:/projects/gdg-multi-agent-ai/.vscode/settings.json) to explicitly tell the workspace IDE to default to:
-    `C:\Users\sanem\AppData\Local\Programs\Python\Python311\python.exe`
-    This resolved the local path select/browse error.
-
-### 3. Git Status Cleanup
-- **Action**: Created [.gitignore](file:///d:/projects/gdg-multi-agent-ai/.gitignore) targeting typical Python temporary directories (`__pycache__/`), local settings (`.vscode/`), local environment keys (`.env`), and typical virtual environments (`.venv`, `venv/`).
+### 2. Git Status Cleanup
+* **Fix:** `.vscode/` settings directories and local environment secrets `.env` are fully ignored in the repository's [.gitignore](.gitignore).
 
 ---
 
 ## 🚀 Running & Verification Instructions
 
 ### 1. Authenticate with Google Cloud
-Ensure your local command line is authenticated:
+Ensure your local terminal has active Vertex AI SDK credentials:
 ```powershell
 gcloud auth login
 gcloud auth application-default login
 ```
 
 ### 2. Configure Environment Secrets
-Ensure [.env](file:///d:/projects/gdg-multi-agent-ai/.env) exists in the project root with your valid project details:
+Ensure `.env` exists in the project root:
 ```env
-GCP_PROJECT_ID=your-actual-gcp-project-id
+GCP_PROJECT_ID=gdg-agent-sayen-2026
 GCP_LOCATION=us-central1
 ```
 
-### 3. Test Local Executables
-* **CLI Demo**: `python src/main.py`
-* **API Listener**: `python src/app.py` (accessible at `http://localhost:8080/query`)
+### 3. Start the Web Dashboard
+```powershell
+python src/app.py
+```
+Open your browser and navigate to **[http://127.0.0.1:8080](http://127.0.0.1:8080)** to test the chat and SQLite memory variables.

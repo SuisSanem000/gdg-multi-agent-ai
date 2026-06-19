@@ -1,1 +1,1 @@
-# Legal Analyst Micro-Agent package.
+# Smart Contact Notebook & Relationship Coach package.
