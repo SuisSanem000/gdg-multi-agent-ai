@@ -656,6 +656,30 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
+.app-footer .footer-links {
+    margin-top: 0.25rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.app-footer .footer-links a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition-fast);
+}
+
+.app-footer .footer-links a:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+}
+
+.app-footer .footer-links .separator {
+    color: var(--border-color);
+}
+
 /* Animations */
 @keyframes slideUp {
     from {

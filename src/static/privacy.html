@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - GDG Yerevan AI Workshop</title>
+    <!-- Modern Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .doc-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow-premium);
+        }
+        .doc-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .doc-header i {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+        .doc-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+        .doc-body {
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+        .doc-body h2 {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .doc-body h2 i {
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+        .doc-body p {
+            margin-bottom: 1rem;
+        }
+        .doc-body ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .doc-body li {
+            margin-bottom: 0.5rem;
+        }
+        .doc-footer {
+            margin-top: 3rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-card);
+            color: var(--text-dark);
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition-fast);
+            border: 1px solid var(--border-color);
+        }
+        .btn-back:hover {
+            background: var(--bg-card-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <header class="doc-header">
+            <i class="fa-solid fa-user-shield"></i>
+            <div>
+                <h1>Privacy Policy</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Last updated: June 19, 2026</p>
+            </div>
+        </header>
+        
+        <main class="doc-body">
+            <p>Your privacy is important to us. This Privacy Policy clarifies how session data, contact vectors, and queries are handled by the GDG Yerevan AI Workshop prep application.</p>
+            
+            <h2><i class="fa-solid fa-server"></i> 1. Scope and Local Processing</h2>
+            <p>This application is designed to run locally or inside standard container platforms (such as Google Cloud Run). Most processing occurs dynamically during execution:</p>
+            <ul>
+                <li>The contact data search matches are retrieved from your locally initialized in-memory database.</li>
+                <li>Session variables (such as facts stored by the coach agent) are kept in ChromaDB session memory.</li>
+                <li>We do not transmit your local contact records or user chat queries to any external database hosted by the software developers.</li>
+            </ul>
+            
+            <h2><i class="fa-solid fa-brain"></i> 2. Google Cloud Vertex AI Integration</h2>
+            <p>By using this application, queries, contact parameters, and chat histories are transmitted to the **Google Cloud Vertex AI (Agent Platform)** endpoints under your configured service credentials. These request payloads are processed by Google's generative models (e.g. <code>gemini-2.5-flash</code>) to calculate tool arguments and draft relationship coaching strategies.</p>
+            <p>All data sent to Vertex AI is subject to Google's standard enterprise terms of service and data security commitments. Enterprise model requests are not used to train base models.</p>
+            
+            <h2><i class="fa-solid fa-trash-can"></i> 3. Data Control and Memory Clearance</h2>
+            <p>You have full control over the saved relationship facts in this application. At any time during your workshop testing, you can click the <strong>Clear Memory</strong> button in the top navigation panel. This will immediately purge all session variables stored in ChromaDB for your active Session ID.</p>
+            
+            <h2><i class="fa-solid fa-envelope"></i> 4. Contact Us</h2>
+            <p>For any questions regarding this workshop project and data configurations, please contact the workshop team during the interactive session.</p>
+            
+            <div class="doc-footer">
+                <a href="/" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -17,21 +17,23 @@ from vertexai.generative_models import GenerativeModel, Tool, FunctionDeclaratio
 # Helpers
 # =====================================================================
 
-def _extract_function_call(response):
-    """Safely extracts function call from Vertex AI response candidates."""
+def _extract_function_calls(response):
+    """Safely extracts all function calls from Vertex AI response candidates."""
     try:
         candidates = response.candidates
         if candidates and len(candidates) > 0:
             candidate = candidates[0]
             if hasattr(candidate, 'function_calls') and candidate.function_calls:
-                return candidate.function_calls[0]
+                return list(candidate.function_calls)
             elif hasattr(candidate, 'content') and candidate.content.parts:
-                part = candidate.content.parts[0]
-                if hasattr(part, 'function_call') and part.function_call:
-                    return part.function_call
+                calls = []
+                for part in candidate.content.parts:
+                    if hasattr(part, 'function_call') and part.function_call:
+                        calls.append(part.function_call)
+                return calls
     except Exception as e:
         print(f"DEBUG: Error parsing function calls: {e}")
-    return None
+    return []
 
 
 # =====================================================================
@@ -76,7 +78,7 @@ class ContactAnalystAgent:
         self.db_tool = Tool(function_declarations=[self.get_contact_declaration, self.search_contacts_declaration])
         
         self.model = GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.5-flash",
             tools=[self.db_tool],
             system_instruction=(
                 "You are a Contact Analyst Agent. Your job is to answer questions about contacts using "
@@ -120,54 +122,58 @@ class ContactAnalystAgent:
         response = chat.send_message(user_input)
         
         while True:
-            function_call = _extract_function_call(response)
-            if not function_call:
+            function_calls = _extract_function_calls(response)
+            if not function_calls:
                 break
                 
-            tool_name = function_call.name
-            args = function_call.args
-            
-            if tool_name == "get_contact_details":
-                contact_id = args.get("contact_id")
-                trace.append({
-                    "agent": "ContactAnalystAgent",
-                    "action": "call_tool",
-                    "tool": "get_contact_details",
-                    "args": {"contact_id": contact_id}
-                })
+            response_parts = []
+            for function_call in function_calls:
+                tool_name = function_call.name
+                args = function_call.args
                 
-                tool_output = self._execute_db_query(contact_id)
-                trace.append({
-                    "agent": "ContactAnalystAgent",
-                    "action": "tool_output",
-                    "tool": "get_contact_details",
-                    "output": tool_output
-                })
-            elif tool_name == "search_contacts_semantically":
-                query = args.get("query")
-                trace.append({
-                    "agent": "ContactAnalystAgent",
-                    "action": "call_tool",
-                    "tool": "search_contacts_semantically",
-                    "args": {"query": query}
-                })
-                
-                tool_output = self._search_contacts_semantically(query)
-                trace.append({
-                    "agent": "ContactAnalystAgent",
-                    "action": "tool_output",
-                    "tool": "search_contacts_semantically",
-                    "output": tool_output
-                })
-            else:
-                break
-                
-            response = chat.send_message(
-                Part.from_function_response(
-                    name=tool_name,
-                    response={"result": tool_output}
+                if tool_name == "get_contact_details":
+                    contact_id = args.get("contact_id")
+                    trace.append({
+                        "agent": "ContactAnalystAgent",
+                        "action": "call_tool",
+                        "tool": "get_contact_details",
+                        "args": {"contact_id": contact_id}
+                    })
+                    
+                    tool_output = self._execute_db_query(contact_id)
+                    trace.append({
+                        "agent": "ContactAnalystAgent",
+                        "action": "tool_output",
+                        "tool": "get_contact_details",
+                        "output": tool_output
+                    })
+                elif tool_name == "search_contacts_semantically":
+                    query = args.get("query")
+                    trace.append({
+                        "agent": "ContactAnalystAgent",
+                        "action": "call_tool",
+                        "tool": "search_contacts_semantically",
+                        "args": {"query": query}
+                    })
+                    
+                    tool_output = self._search_contacts_semantically(query)
+                    trace.append({
+                        "agent": "ContactAnalystAgent",
+                        "action": "tool_output",
+                        "tool": "search_contacts_semantically",
+                        "output": tool_output
+                    })
+                else:
+                    tool_output = f"Unknown tool: {tool_name}"
+                    
+                response_parts.append(
+                    Part.from_function_response(
+                        name=tool_name,
+                        response={"result": tool_output}
+                    )
                 )
-            )
+                
+            response = chat.send_message(response_parts)
                 
         final_text = response.text
         trace.append({
@@ -260,7 +266,7 @@ class RelationshipCoachAgent:
         )
         
         return GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.5-flash",
             tools=[self.tools],
             system_instruction=system_instruction
         )
@@ -283,51 +289,55 @@ class RelationshipCoachAgent:
         turn = 0
         while turn < max_turns:
             turn += 1
-            function_call = _extract_function_call(response)
-            if not function_call:
+            function_calls = _extract_function_calls(response)
+            if not function_calls:
                 break
                 
-            tool_name = function_call.name
-            args = function_call.args
-            
-            trace.append({
-                "agent": "RelationshipCoachAgent",
-                "action": "call_tool",
-                "tool": tool_name,
-                "args": dict(args)
-            })
-            
-            tool_output = ""
-            if tool_name == "query_contact_analyst":
-                sub_query = args.get("query")
-                tool_output = self.analyst.run(sub_query, trace=trace)
-            elif tool_name == "recall_fact":
-                key = args.get("key", "").strip().lower()
-                from database import get_session_memories
-                mems = get_session_memories(self.db, session_id)
-                tool_output = mems.get(key, f"Fact with key '{key}' not found in memory.")
-            elif tool_name == "store_fact":
-                key = args.get("key", "").strip().lower()
-                value = args.get("value", "").strip()
-                from database import save_session_memory
-                save_session_memory(self.db, session_id, key, value)
-                tool_output = f"Successfully stored fact: '{key}' = '{value}'"
-            else:
-                tool_output = f"Unknown tool: {tool_name}"
+            response_parts = []
+            for function_call in function_calls:
+                tool_name = function_call.name
+                args = function_call.args
                 
-            trace.append({
-                "agent": "RelationshipCoachAgent",
-                "action": "tool_output",
-                "tool": tool_name,
-                "output": tool_output
-            })
-            
-            response = chat.send_message(
-                Part.from_function_response(
-                    name=tool_name,
-                    response={"result": tool_output}
+                trace.append({
+                    "agent": "RelationshipCoachAgent",
+                    "action": "call_tool",
+                    "tool": tool_name,
+                    "args": dict(args)
+                })
+                
+                tool_output = ""
+                if tool_name == "query_contact_analyst":
+                    sub_query = args.get("query")
+                    tool_output = self.analyst.run(sub_query, trace=trace)
+                elif tool_name == "recall_fact":
+                    key = args.get("key", "").strip().lower()
+                    from database import get_session_memories
+                    mems = get_session_memories(self.db, session_id)
+                    tool_output = mems.get(key, f"Fact with key '{key}' not found in memory.")
+                elif tool_name == "store_fact":
+                    key = args.get("key", "").strip().lower()
+                    value = args.get("value", "").strip()
+                    from database import save_session_memory
+                    save_session_memory(self.db, session_id, key, value)
+                    tool_output = f"Successfully stored fact: '{key}' = '{value}'"
+                else:
+                    tool_output = f"Unknown tool: {tool_name}"
+                    
+                trace.append({
+                    "agent": "RelationshipCoachAgent",
+                    "action": "tool_output",
+                    "tool": tool_name,
+                    "output": tool_output
+                })
+                
+                response_parts.append(
+                    Part.from_function_response(
+                        name=tool_name,
+                        response={"result": tool_output}
+                    )
                 )
-            )
+                
+            response = chat.send_message(response_parts)
             
         final_text = response.text
         trace.append({
@@ -346,9 +356,14 @@ class SmartNotebookOrchestrator:
         # Initialize Vertex AI
         project = os.getenv("GCP_PROJECT_ID", "gdg-agent-sayen-2026")
         location = os.getenv("GCP_LOCATION", "us-central1")
+        api_key = os.getenv("API_key") or os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY")
         
-        vertexai.init(project=project, location=location)
-        print("[Orchestrator] Vertex AI SDK initialized successfully.")
+        if api_key:
+            vertexai.init(project=project, location=location, api_key=api_key)
+            print("[Orchestrator] Vertex AI SDK initialized successfully using API Key.")
+        else:
+            vertexai.init(project=project, location=location)
+            print("[Orchestrator] Vertex AI SDK initialized successfully using Application Default Credentials.")
 
         # Instantiate sub-agents
         self.analyst = ContactAnalystAgent(db_client)
